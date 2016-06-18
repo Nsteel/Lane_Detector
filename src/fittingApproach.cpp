@@ -148,8 +148,13 @@ std::vector<cv::Point> FittingApproach::fitting(cv::Mat& original, cv::Mat& prep
                 cv::line(currentFrame, cv::Point(currentFrame.cols/2, 0), cv::Point(currentFrame.cols/2, currentFrame.rows), cv::Scalar(0, 255, 239), 1);
         }
 
+        /*Returning the points of interest in a vector;
+         * using the following format: {vanishing_point, left_lane, right_lane}
+         */
         std::vector<cv::Point> points;
         points.push_back(lastVp);
+        points.push_back(lastLeftLine[1]);
+        points.push_back(lastRightLine[1]);
         return points;
 }
 
@@ -247,7 +252,7 @@ line FittingApproach::clusterLines(std::vector<line>& lines, int imageWidth, cv:
 
         for(line l : lines)
         {
-
+                //From here on, the vanishing point is the first point of the lines
                 if(l[0].y < l[1].y) l[0] = vanishingPoint;
                 else
                 {
