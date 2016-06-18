@@ -11,7 +11,7 @@ find_package(catkin REQUIRED COMPONENTS
   image_transport
   std_msgs
   dynamic_reconfigure
-  swri_profiler
+   swri_profiler 
 )
 find_package(OpenCV 2 REQUIRED)
 find_package(OpenMP REQUIRED)
