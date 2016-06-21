@@ -23,6 +23,7 @@
 #include <swri_profiler/profiler.h>
 #include <geometry_msgs/PointStamped.h>
 #include <geometry_msgs/PolygonStamped.h>
+#include <lane_detector/ipm.h>
 
 cv_bridge::CvImagePtr currentFrame_ptr;
 Preprocessor* preproc;
@@ -43,14 +44,28 @@ void configCallback(lane_detector::DetectorConfig& config, uint32_t level)
 
 template<class T>
 void processImage(Preprocessor* preproc, FeatureExtractor<T>* extractor, Fitting<T>* fittingPhase) {
+
+        if(currentFrame_ptr->image.channels() == 3) {
+                cv::cvtColor(currentFrame_ptr->image, currentFrame_ptr->image, CV_BGR2GRAY);
+        }
+
         cv::Mat copyImg;
         linesPair features;
+        IPM ipm;
+        ipm.applyHomography(currentFrame_ptr->image, currentFrame_ptr->image);
+        //cv::imshow("IPM", currentFrame_ptr->image);
+        //cv::waitKey(20);
         currentFrame_ptr->image.copyTo(copyImg);
+        cv::cvtColor(copyImg, copyImg, CV_GRAY2BGR);
         preproc->preprocess(currentFrame_ptr->image);
-        extractor->extract(copyImg, currentFrame_ptr->image, features);
-        std::vector<cv::Point> points = fittingPhase->fitting(copyImg, currentFrame_ptr->image, features);
+        //extractor->extract(copyImg, currentFrame_ptr->image, features);
+        //std::vector<cv::Point> points = fittingPhase->fitting(copyImg, currentFrame_ptr->image, features);
 
-        geometry_msgs::Point32 vanishingPoint;
+        if(currentFrame_ptr->image.channels() == 1)
+        {
+                cv::cvtColor(currentFrame_ptr->image, currentFrame_ptr->image, CV_GRAY2BGR);
+        }
+        /*geometry_msgs::Point32 vanishingPoint;
         vanishingPoint.x = points[0].x;
         vanishingPoint.y = points[0].y;
 
@@ -66,7 +81,7 @@ void processImage(Preprocessor* preproc, FeatureExtractor<T>* extractor, Fitting
         detectedPoints.header.stamp = ros::Time::now(); // time
         detectedPoints.header.frame_id = "base_footprint";
         detectedPoints.polygon.points = {vanishingPoint, left_lane, right_lane};
-        detectedPoints_pub.publish(detectedPoints);
+        detectedPoints_pub.publish(detectedPoints);*/
 }
 
 void readImg(const sensor_msgs::ImageConstPtr& img)

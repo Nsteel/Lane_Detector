@@ -23,8 +23,8 @@ public:
                 thresholdRight = config.hough_threshold_right_ROI;
         };
 private:
-        bool filterLineLeft(cv::Point pt1, cv::Point pt2, int imageRows, int imageCols);
-        bool filterLineRight(cv::Point pt1, cv::Point pt2, int imageRows, int imageCols);
+        bool filterLineLeft(cv::Point pt1, cv::Point pt2);
+        bool filterLineRight(cv::Point pt1, cv::Point pt2);
         int thresholdLeft;
         int thresholdRight;
 

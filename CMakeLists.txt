@@ -11,7 +11,7 @@ find_package(catkin REQUIRED COMPONENTS
   image_transport
   std_msgs
   dynamic_reconfigure
-   swri_profiler 
+   swri_profiler
 )
 find_package(OpenCV 2 REQUIRED)
 find_package(OpenMP REQUIRED)
@@ -119,7 +119,7 @@ catkin_package(
 ## Specify additional locations of header files
 ## Your package locations should be listed before other locations
 # include_directories(include)
-include_directories(include 
+include_directories(include
   ${catkin_INCLUDE_DIRS}
   ${OpenCV_INCLUDE_DIRS}
 )
@@ -128,6 +128,7 @@ include_directories(include
 add_library(CANNY src/cannyEdge.cpp)
 add_library(HOUGH src/houghTransform.cpp)
 add_library(FITTING src/fittingApproach.cpp)
+add_library(IPM src/ipm.cpp)
 
 ## Declare a C++ executable
 add_executable(lane_detector src/lane_detector.cpp)
@@ -144,7 +145,7 @@ add_dependencies(lane_detector ${PROJECT_NAME}_gencfg)
 
 ## Specify libraries to link a library or executable target against
 
-target_link_libraries(CANNY ${OpenCV_LIBRARIES} swri_profiler)
+target_link_libraries(CANNY ${OpenCV_LIBRARIES} IPM swri_profiler)
 target_link_libraries(HOUGH ${OpenCV_LIBRARIES} swri_profiler)
 target_link_libraries(FITTING ${OpenCV_LIBRARIES} swri_profiler ${catkin_LIBRARIES})
 target_link_libraries(lane_detector ${catkin_LIBRARIES} CANNY HOUGH FITTING)
