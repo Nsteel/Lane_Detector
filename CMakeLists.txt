@@ -126,8 +126,6 @@ include_directories(include
 
 ## Declare a C++ library
 add_library(CANNY src/cannyEdge.cpp)
-add_library(HOUGH src/houghTransform.cpp)
-add_library(FITTING src/fittingApproach.cpp)
 add_library(IPM src/ipm.cpp)
 
 ## Declare a C++ executable
@@ -144,12 +142,11 @@ add_dependencies(lane_detector ${PROJECT_NAME}_gencfg)
 # add_dependencies(lane_detector_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 ## Specify libraries to link a library or executable target against
+find_library(laneDetector_LIBRARIES LaneDetector /home/n/catkin_ws/src/lane_detector/lib/)
 
 target_link_libraries(CANNY ${OpenCV_LIBRARIES} IPM swri_profiler)
-target_link_libraries(HOUGH ${OpenCV_LIBRARIES} swri_profiler)
-target_link_libraries(FITTING ${OpenCV_LIBRARIES} swri_profiler ${catkin_LIBRARIES})
-target_link_libraries(lane_detector ${catkin_LIBRARIES} CANNY HOUGH FITTING)
-target_link_libraries(lane_detector ${OpenCV_LIBRARIES})
+target_link_libraries(lane_detector ${catkin_LIBRARIES} CANNY)
+target_link_libraries(lane_detector ${OpenCV_LIBRARIES} ${laneDetector_LIBRARIES})
 target_link_libraries(camera_simulator ${OpenCV_LIBRARIES} ${catkin_LIBRARIES})
 
 #############
