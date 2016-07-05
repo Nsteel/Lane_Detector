@@ -30,6 +30,12 @@ typedef enum LineColor_ {
   LINE_COLOR_WHITE
 } LineColor;
 
+///Slope type
+typedef enum Slopetype_ {
+  SLOPE_DECREASING = 0,
+  SLOPE_INCREASING = 1
+} SlopeType;
+
 /// Line structure with start and end points
 typedef struct Line
 {
@@ -42,6 +48,15 @@ typedef struct Line
   ///score of line
   float score;
 } Line;
+
+/// Line structure with start and end points
+typedef struct Box
+{
+  ///Rectangle of the box
+  CvRect box;
+  ///Slope type of the line inside the box
+  SlopeType line_slope_type;
+} Box;
 
 /// Spline structure
 typedef struct Spline
@@ -698,7 +713,7 @@ void mcvIntersectLineRThetaWithRect(FLOAT r, FLOAT theta, const Line &rect,
  *
  *
  */
-void mcvGetLanes(const CvMat *inImage, const CvMat* clrImage,
+void mcvGetLanes(CvMat **inImage, CvMat* clrImage,
                  vector<Line> *lanes, vector<FLOAT> *lineScores,
                  vector<Spline> *splines, vector<Spline>* splines_world, vector<float> *splineScores,
                  CameraInfo *cameraInfo, LaneDetectorConf *stopLineConf,
@@ -778,6 +793,16 @@ void mcvFitRansacLine(const CvMat *image, int numSamples, int numIterations,
                       float threshold, float scoreThreshold, int numGoodFit,
                       bool getEndPoints, LineType lineType,
                       Line *lineXY, float *lineRTheta, float *lineScore);
+
+/** \brief This function extracts bounding boxes from lines including
+ * \ the slope type of the line inside it
+ * \param lines vector of lines
+ * \param type the type of lines (LINE_HORIZONTAL or LINE_VERTICAL)
+ * \param size the size of image containing the lines
+ * \param boxes a vector of output bounding boxes
+ */
+void mcvGetLinesBoundingBoxesWithSlope(const vector<Line> &lines, LineType type,
+                              CvSize size, vector<Box> &boxes);                      
 
 /** This functions fits a line using the orthogonal distance to the line
     by minimizing the sum of squares of this distance.

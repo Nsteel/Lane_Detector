@@ -15,6 +15,7 @@ find_package(catkin REQUIRED COMPONENTS
 )
 find_package(OpenCV 2 REQUIRED)
 find_package(OpenMP REQUIRED)
+find_package(MRPT REQUIRED)
 
 ## System dependencies are found with CMake's conventions
 # find_package(Boost REQUIRED COMPONENTS system)
@@ -122,11 +123,12 @@ catkin_package(
 include_directories(include
   ${catkin_INCLUDE_DIRS}
   ${OpenCV_INCLUDE_DIRS}
+  ${MRPT_INCLUDE_DIRS}
 )
 
 ## Declare a C++ library
 add_library(CANNY src/cannyEdge.cpp)
-add_library(IPM src/ipm.cpp)
+add_library(FITTING src/fittingApproach.cpp)
 
 ## Declare a C++ executable
 add_executable(lane_detector src/lane_detector.cpp)
@@ -144,8 +146,9 @@ add_dependencies(lane_detector ${PROJECT_NAME}_gencfg)
 ## Specify libraries to link a library or executable target against
 find_library(laneDetector_LIBRARIES LaneDetector /home/n/catkin_ws/src/lane_detector/lib/)
 
-target_link_libraries(CANNY ${OpenCV_LIBRARIES} IPM swri_profiler)
-target_link_libraries(lane_detector ${catkin_LIBRARIES} CANNY)
+target_link_libraries(CANNY ${OpenCV_LIBRARIES} swri_profiler)
+target_link_libraries(FITTING ${OpenCV_LIBRARIES} ${MRPT_LIBS})
+target_link_libraries(lane_detector ${catkin_LIBRARIES} CANNY FITTING)
 target_link_libraries(lane_detector ${OpenCV_LIBRARIES} ${laneDetector_LIBRARIES})
 target_link_libraries(camera_simulator ${OpenCV_LIBRARIES} ${catkin_LIBRARIES})
 

@@ -14,7 +14,6 @@
 
 typedef std::vector<cv::Point> line;
 
-template<typename T>
 class Fitting {
 public:
         Fitting(){
@@ -22,7 +21,7 @@ public:
         inline virtual void setConfig(lane_detector::DetectorConfig& config) {
                 this->config = config;
         };
-        virtual std::vector<cv::Point> fitting(cv::Mat& original, cv::Mat& preprocessed, T& features) = 0;
+        virtual std::vector<cv::Point> fitting(cv::Mat& original, cv::Mat& preprocessed) = 0;
 protected:
         lane_detector::DetectorConfig config;
 };

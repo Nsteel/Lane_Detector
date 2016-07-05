@@ -14,6 +14,7 @@
 #include <opencv2/highgui/highgui.hpp>
 #include <iostream>
 #include <lane_detector/cannyEdge.h>
+#include <lane_detector/fittingApproach.h>
 #include <cv.h>
 #include <sstream>
 #include <dynamic_reconfigure/server.h>
@@ -21,14 +22,15 @@
 #include <swri_profiler/profiler.h>
 #include <geometry_msgs/PointStamped.h>
 #include <geometry_msgs/PolygonStamped.h>
-#include <lane_detector/ipm.h>
 #include <lane_detector/LaneDetector.hh>
 #include <lane_detector/CameraInfoOpt.h>
 #include <lane_detector/LaneDetectorOpt.h>
 #include <lane_detector/mcv.hh>
+#include <lane_detector/utils.h>
 
 cv_bridge::CvImagePtr currentFrame_ptr;
 Preprocessor* preproc;
+Fitting* fitting_phase;
 image_transport::Publisher resultImg_pub;
 ros::Publisher detectedPoints_pub;
 lane_detector::DetectorConfig dynConfig;
@@ -175,9 +177,6 @@ void setConfig() {
   lanesConf.checkLaneWidth = dynConfig.checkLaneWidth;
   lanesConf.checkLaneWidthMean = dynConfig.checkLaneWidthMean;
   lanesConf.checkLaneWidthStd = dynConfig.checkLaneWidthStd;
-
-  mcvInitCameraInfo("/home/n/lane-detector/src/CameraInfo.conf", &cameraInfo);
-
 }
 
 void configCallback(lane_detector::DetectorConfig& config, uint32_t level)
@@ -197,19 +196,65 @@ void processImage(LaneDetector::CameraInfo& cameraInfo, LaneDetector::LaneDetect
     std::vector<LaneDetector::Line> lanes;
     std::vector<LaneDetector::Spline> splines;
     std::vector<LaneDetector::Spline> splines_world;
+    std::vector<LaneDetector::Box> ipmBoxes;
     cv::Mat originalImg = currentFrame_ptr->image;
     //cv::Mat originalImg = cv::imread("/home/n/Desktop/curve.png");
     CvMat raw_mat = originalImg;
     CvMat* raw_ptr = &raw_mat;
     CvMat* mat_ptr;
     LaneDetector::mcvLoadImage(&raw_ptr, &mat_ptr);
-    if(dynConfig.debug_lines) LaneDetector::DEBUG_LINES = 1;
-    //LaneDetector::SHOW_IMAGE(&mat, "HOla", 1);
-    mcvGetLanes(mat_ptr, raw_ptr, &lanes, &lineScores, &splines, &splines_world, &splineScores,
-                &cameraInfo, &lanesConf, NULL);
 
+    //if(dynConfig.debug_lines) LaneDetector::DEBUG_LINES = 1;
+    mcvGetLanes(&mat_ptr, raw_ptr, &lanes, &lineScores, &splines, &splines_world, &splineScores,
+                &cameraInfo, &lanesConf, NULL);
+    LaneDetector::mcvScaleMat(mat_ptr, mat_ptr);
+    CvMat* tmp = cvCloneMat(mat_ptr);
+    cv::Mat outImage(tmp);
+    cv::cvtColor(outImage, outImage, CV_GRAY2BGR);
+    ROS_DEBUG("Lines Size:%lu", lanes.size());
+    if(lanes.size() > 3) {
+      std::sort(lanes.begin(), lanes.end(), utils::compareLanes);
+      auto last_lane = lanes.begin() + 3;
+      lanes = std::vector<LaneDetector::Line>(lanes.begin(), last_lane);
+    }
+    mcvGetLinesBoundingBoxesWithSlope(lanes, LaneDetector::LINE_VERTICAL, cvSize(mat_ptr->width-1, mat_ptr->height-1), ipmBoxes);
+    utils::resizeBoxes(ipmBoxes, LaneDetector::LINE_VERTICAL);
+    if(dynConfig.draw_lines) {
+      for (LaneDetector::Line line : lanes)
+      {
+        cv::Point startPoint(line.startPoint.x, line.startPoint.y);
+        cv::Point endPoint(line.endPoint.x, line.endPoint.y);
+        cv::clipLine(cv::Size(outImage.cols, outImage.rows), startPoint, endPoint);
+        cv::line(outImage, startPoint, endPoint, cv::Scalar(0,255,0));
+    }
+  }
+
+    cv::Mat aux = outImage.clone();
+
+    for(LaneDetector::Box box : ipmBoxes) {
+      cv::Mat roi = outImage(box.box);
+      fitting_phase->fitting(originalImg, roi);
+      roi.copyTo(aux(box.box));
+      if(dynConfig.draw_boxes) cv::rectangle(aux, cv::Point(box.box.x, box.box.y),
+                                              cv::Point(box.box.x + box.box.width-1, box.box.y + box.box.height-1),
+                                              cv::Scalar(0,0,255));
+    }
+    outImage = aux;
+    //cv::Mat right_roi = outImage(cv::Rect(cv::Point(78, 0), cv::Point(108, outImage.rows-1)));
+    //fitting_phase->fitting(originalImg, right_roi);
+    //cv::cvtColor(outImage, outImage, CV_GRAY2BGR);
+    /*cv::line(outImage, cv::Point(108, 0), cv::Point(108, outImage.rows-1), cv::Scalar(255,0,0));
+    cv::line(outImage, cv::Point(78, 0), cv::Point(78, outImage.rows-1), cv::Scalar(255,0,0));
+    cv::line(outImage, cv::Point(73, 0), cv::Point(73, outImage.rows-1), cv::Scalar(0,255,0));
+    cv::line(outImage, cv::Point(43, 0), cv::Point(43, outImage.rows-1), cv::Scalar(0,255,0));
+    cv::line(outImage, cv::Point(38, 0), cv::Point(38, outImage.rows-1), cv::Scalar(0,0,255));
+    cv::line(outImage, cv::Point(8, 0), cv::Point(8, outImage.rows-1), cv::Scalar(0,0,255));*/
+    cv::imshow("Out", outImage);
+    //cv::imshow("Out", right_roi);
+    cv::waitKey(1);
+    cvReleaseMat(&tmp);
        // print lanes
-        for(int i=0; i<splines.size(); i++)
+        /*for(int i=0; i<splines.size(); i++)
          {
            if (splines[i].color == LaneDetector::LINE_COLOR_YELLOW)
              mcvDrawSpline(raw_ptr, splines[i], CV_RGB(255,255,0), 3);
@@ -233,7 +278,7 @@ void processImage(LaneDetector::CameraInfo& cameraInfo, LaneDetector::LaneDetect
           LaneDetector::mcvDrawText(raw_ptr, str,
                       cvPointFrom32f(splines[i].points[splines[i].degree]),
                                       1, CV_RGB(0, 0, 255));
-        }
+        }*/
         cvReleaseMat(&mat_ptr);
   }
 }
@@ -249,7 +294,7 @@ void readImg(const sensor_msgs::ImageConstPtr& img)
                   //      currentFrame_ptr->encoding = sensor_msgs::image_encodings::MONO8;
                 //}
                 resultImg_pub.publish(*currentFrame_ptr->toImageMsg());
-                currentFrame_ptr.reset();
+                //currentFrame_ptr.reset();
         }
         catch (cv_bridge::Exception& e)
         {
@@ -263,7 +308,10 @@ void readImg(const sensor_msgs::ImageConstPtr& img)
 int main(int argc, char **argv){
 
         preproc = new CannyEdge();
+        fitting_phase = new FittingApproach();
+
         //processImage(cameraInfo, lanesConf);
+        mcvInitCameraInfo("/home/n/lane-detector/src/CameraInfo.conf", &cameraInfo);
         ros::init(argc, argv, "lane_detector");
 
         /**
@@ -306,5 +354,6 @@ int main(int argc, char **argv){
         //spinner.spin(); // spin() will not return until the node has been shutdown
         ros::spin();
         delete preproc;
+        delete fitting_phase;
         return 0;
 }

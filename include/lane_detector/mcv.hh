@@ -60,6 +60,8 @@ void SHOW_RECT(const CvRect rect, char str[]="Rect:");
  */
 void mcvLoadImage(CvMat **clrImage, CvMat** channelImage);
 
+void mcvLoadImage2(const char *filename, CvMat **clrImage, CvMat** channelImage);
+
 
 /**
  * This function scales the input image to have values 0->1
