@@ -327,6 +327,21 @@ typedef struct LaneDetectorConf
   float checkLaneWidthStd;
 } LaneDetectorConf;
 
+
+/** This function extracts lines from the passed infiltered and thresholded
+ * image
+ *
+ * \param image the input thresholded filtered image
+ * \param lineType the line type to look for (LINE_VERTICAL or LINE_HORIZONTAL)
+ * \param lines a vector of lines
+ * \param lineScores the line scores
+ * \param lineConf the conf structure
+ *
+ */
+void getLines(const CvMat* image, LineType lineType,
+                 vector<Line> &lines, vector<float> &lineScores,
+                 LaneDetectorConf *lineConf);
+
 //function definitions
 /**
  * This function gets a 1-D gaussian filter with specified
@@ -486,6 +501,17 @@ void mcvMat2Lines(const CvMat *mat, vector<Line> *lines);
  */
 void mcvIntersectLineWithBB(const Line *inLine, const CvSize bbox,
                             Line *outLine);
+
+/** This function performs the IPM transformation, filter the IPM image
+ * and applies thresholding to the image.
+ *
+ * \param image the input/output image
+ * \param cameraInfo the camera parameters
+ * \param ipmInfo output for parameters of the performed IPM transformation
+ * \param lanesConf parameters for lane detection
+ */
+void mcvPreprocess(CvMat **inImage,
+                 CameraInfo *cameraInfo, IPMInfo* ipmInfo, LaneDetectorConf *lanesConf);
 
 /** This function checks if the given point is inside the bounding box
  * specified
@@ -802,7 +828,7 @@ void mcvFitRansacLine(const CvMat *image, int numSamples, int numIterations,
  * \param boxes a vector of output bounding boxes
  */
 void mcvGetLinesBoundingBoxesWithSlope(const vector<Line> &lines, LineType type,
-                              CvSize size, vector<Box> &boxes);                      
+                              CvSize size, vector<Box> &boxes);
 
 /** This functions fits a line using the orthogonal distance to the line
     by minimizing the sum of squares of this distance.

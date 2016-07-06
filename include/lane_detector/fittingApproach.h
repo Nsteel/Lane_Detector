@@ -7,19 +7,14 @@
 #ifndef FITTINGAPPROACH_H_
 #define FITTINGAPPROACH_H_
 
-#include <lane_detector/fitting.h>
 #include <ros/ros.h>
-typedef std::vector<cv::Point> line;
-typedef std::vector<line> lines;
+#include <cv.h>
 
-class FittingApproach : public Fitting {
+class FittingApproach {
 public:
         FittingApproach(){
         };
-        inline void setConfig(lane_detector::DetectorConfig& config) {
-                Fitting::setConfig(config);
-        };
-        std::vector<cv::Point> fitting(cv::Mat& original, cv::Mat& preprocessed);
+        void fitting(cv::Mat& preprocessed, std::vector<cv::Point>& splinePoints);
 };
 
 #endif /* FITTINGAPPROACH_H_ */

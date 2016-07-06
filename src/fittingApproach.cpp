@@ -2,30 +2,30 @@
 #include <iostream>
 #include <swri_profiler/profiler.h>
 #include <opencv2/highgui/highgui.hpp>
-#include <math.h>
 #include <lane_detector/utils.h>
 #include <lane_detector/fitSpline.h>
 #include <mrpt/math/model_search.h>
 #include <mrpt/random.h>
 
 
-std::vector<cv::Point> FittingApproach::fitting(cv::Mat& original, cv::Mat& preprocessed)
+void FittingApproach::fitting(cv::Mat& roi, std::vector<cv::Point>& splinePoints)
 {
 
-        SWRI_PROFILE("Fitting");
+        SWRI_PROFILE("Fitting_Spline");
 
         std::vector<TPoint2D> points;
+        std::vector<cv::KalmanFilter> kalmanFilters {cv::KalmanFilter(8,4), cv::KalmanFilter(8,4), cv::KalmanFilter(8,4)};
 
-        for(int i=0; i < preprocessed.rows; i++)
+        for(int i=0; i < roi.rows; i++)
         {
-                cv::Vec3f* pixel = preprocessed.ptr<cv::Vec3f>(i);
-                for(int j=0; j<preprocessed.cols; j++)
+                cv::Vec3f* pixel = roi.ptr<cv::Vec3f>(i);
+                for(int j=0; j<roi.cols; j++)
                 {
                         float value = pixel[j][0];
                         //ROS_INFO("Val:%f", value);
                         if(value > 0)
                         {
-                          TPoint2D p(preprocessed.rows-1-i, j);
+                          TPoint2D p(roi.rows-1-i, j);
                           points.push_back(p);
                         }
                 }
@@ -44,15 +44,12 @@ std::vector<cv::Point> FittingApproach::fitting(cv::Mat& original, cv::Mat& prep
       		bool found = search.ransacSingleModel( fit, 4, DIST_THRESHOLD, best_model, best_inliers );
           //ROS_INFO("Found:%i",found);
           if(found) {
-            //cv::cvtColor(preprocessed, preprocessed, CV_GRAY2BGR);
             ROS_DEBUG("Inliers count: %lu", best_inliers.size());
             float start_x = 9999;
             float end_x = -1;
             for(int i : best_inliers) {
               TPoint2D p = points[i];
               float x = p.x;
-              //float y = preprocessed.rows-1 - p.y;
-              //cv::circle(preprocessed, cv::Point(x, y), 2, cv::Scalar(255,0,0), 2);
               if(x < start_x) start_x = x;
               if(x > end_x) end_x = x;
             }
@@ -63,14 +60,12 @@ std::vector<cv::Point> FittingApproach::fitting(cv::Mat& original, cv::Mat& prep
               best_model.query(x, y, is_inlier);
               //ROS_INFO("Inlier:%i, x:%f", is_inlier, x);
               float aux_x = y;
-              float aux_y = preprocessed.rows-1-x;
-              if(is_inlier) cv::circle(preprocessed, cv::Point(cvRound(aux_x), cvRound(aux_y)), 2, cv::Scalar(255,0,0), 2);
+              float aux_y = roi.rows-1-x;
+              if(is_inlier) {
+                //cv::circle(roi, cv::Point(cvRound(aux_x), cvRound(aux_y)), 2, cv::Scalar(255,0,0), 2);
+                splinePoints.push_back(cv::Point(cvRound(aux_x), cvRound(aux_y)));
+              }
           }
         }
       }
-        /*Returning the points of interest in a vector;
-         * using the following format: {vanishing_point, left_lane, right_lane}
-         */
-        std::vector<cv::Point> points_interest;
-        return points_interest;
 }

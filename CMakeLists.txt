@@ -11,7 +11,7 @@ find_package(catkin REQUIRED COMPONENTS
   image_transport
   std_msgs
   dynamic_reconfigure
-   swri_profiler
+  swri_profiler
 )
 find_package(OpenCV 2 REQUIRED)
 find_package(OpenMP REQUIRED)
@@ -127,8 +127,10 @@ include_directories(include
 )
 
 ## Declare a C++ library
-add_library(CANNY src/cannyEdge.cpp)
-add_library(FITTING src/fittingApproach.cpp)
+add_library(PREPROCESSOR src/preprocessor.cpp)
+add_library(EXTRACTOR src/featureExtractor.cpp)
+add_library(FITTING src/fitting.cpp)
+add_library(FITTING_APPROACH src/fittingApproach.cpp)
 
 ## Declare a C++ executable
 add_executable(lane_detector src/lane_detector.cpp)
@@ -146,9 +148,11 @@ add_dependencies(lane_detector ${PROJECT_NAME}_gencfg)
 ## Specify libraries to link a library or executable target against
 find_library(laneDetector_LIBRARIES LaneDetector /home/n/catkin_ws/src/lane_detector/lib/)
 
-target_link_libraries(CANNY ${OpenCV_LIBRARIES} swri_profiler)
-target_link_libraries(FITTING ${OpenCV_LIBRARIES} ${MRPT_LIBS})
-target_link_libraries(lane_detector ${catkin_LIBRARIES} CANNY FITTING)
+target_link_libraries(PREPROCESSOR ${OpenCV_LIBRARIES} swri_profiler)
+target_link_libraries(EXTRACTOR ${OpenCV_LIBRARIES} swri_profiler)
+target_link_libraries(FITTING_APPROACH ${OpenCV_LIBRARIES} ${MRPT_LIBS} swri_profiler)
+target_link_libraries(FITTING ${OpenCV_LIBRARIES} swri_profiler FITTING_APPROACH)
+target_link_libraries(lane_detector ${catkin_LIBRARIES} PREPROCESSOR FITTING EXTRACTOR)
 target_link_libraries(lane_detector ${OpenCV_LIBRARIES} ${laneDetector_LIBRARIES})
 target_link_libraries(camera_simulator ${OpenCV_LIBRARIES} ${catkin_LIBRARIES})
 

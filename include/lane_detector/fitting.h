@@ -10,20 +10,24 @@
 #include <opencv2/imgproc/imgproc.hpp>
 #include <lane_detector/DetectorConfig.h>
 #include <cv.h>
-#include <vector>
-
-typedef std::vector<cv::Point> line;
+#include <lane_detector/LaneDetector.hh>
+#include <lane_detector/LaneDetectorOpt.h>
+#include <lane_detector/utils.h>
+#include <lane_detector/InversePerspectiveMapping.hh>
+#include <lane_detector/fittingApproach.h>
 
 class Fitting {
 public:
         Fitting(){
         };
-        inline virtual void setConfig(lane_detector::DetectorConfig& config) {
+        inline void setConfig(lane_detector::DetectorConfig& config) {
                 this->config = config;
+                utils::translateConfiguration(config, this->lanesConf);
         };
-        virtual std::vector<cv::Point> fitting(cv::Mat& original, cv::Mat& preprocessed) = 0;
-protected:
+        void fitting(cv::Mat& original, cv::Mat& preprocessed, std::vector<LaneDetector::Line>& lines);
+private:
         lane_detector::DetectorConfig config;
+        LaneDetector::LaneDetectorConf lanesConf;
 };
 
 #endif /* FITTING_H_ */

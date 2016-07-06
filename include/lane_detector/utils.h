@@ -8,9 +8,12 @@
 #define UTILS_H_
 
 #include <lane_detector/LaneDetector.hh>
+#include <lane_detector/LaneDetectorOpt.h>
+#include <lane_detector/DetectorConfig.h>
 
 namespace utils {
-inline float extrapolateLineX(float y, line& l) {
+
+/*inline float extrapolateLineX(float y, line& l) {
         float x = (y*(l[1].x-l[0].x) - l[1].x*l[0].y + l[0].x*l[1].y)/(l[1].y - l[0].y);
         return x;
 }
@@ -23,7 +26,7 @@ inline float calcSlopeAngle(cv::Point& pt1, cv::Point& pt2) {
         float dX = std::abs(pt2.x - pt1.x);
         float slope = dY/dX;
         return 180*std::atan(slope)/CV_PI;
-}
+}*/
 
 inline bool compareLanes (LaneDetector::Line l1, LaneDetector::Line l2) { return (l1.score > l2.score); }
 
@@ -85,6 +88,148 @@ inline void resizeBoxes(std::vector<LaneDetector::Box> &boxes, LaneDetector::Lin
       }
     } //for j
   } // for i
+}
+
+inline void translateConfiguration(lane_detector::DetectorConfig& dynConfig, LaneDetector::LaneDetectorConf& lanesConf) {
+
+  //init the strucure
+  lanesConf.ipmWidth = dynConfig.ipmWidth;
+  lanesConf.ipmHeight = dynConfig.ipmHeight;
+  lanesConf.ipmLeft = dynConfig.ipmLeft;
+  lanesConf.ipmRight = dynConfig.ipmRight;
+  lanesConf.ipmBottom = dynConfig.ipmBottom;
+  lanesConf.ipmTop = dynConfig.ipmTop;
+  lanesConf.ipmInterpolation = dynConfig.ipmInterpolation;
+
+  lanesConf.lineWidth = dynConfig.lineWidth;
+  lanesConf.lineHeight = dynConfig.lineHeight;
+  lanesConf.kernelWidth = dynConfig.kernelWidth;
+  lanesConf.kernelHeight = dynConfig.kernelHeight;
+  lanesConf.lowerQuantile =
+      dynConfig.lowerQuantile;
+  lanesConf.localMaxima =
+      dynConfig.localMaxima;
+  lanesConf.groupingType = dynConfig.groupingType;
+  lanesConf.binarize = dynConfig.binarize;
+  lanesConf.detectionThreshold =
+      dynConfig.detectionThreshold;
+  lanesConf.smoothScores =
+      dynConfig.smoothScores;
+  lanesConf.rMin = dynConfig.rMin;
+  lanesConf.rMax = dynConfig.rMax;
+  lanesConf.rStep = dynConfig.rStep;
+  lanesConf.thetaMin = dynConfig.thetaMin * CV_PI/180;
+  lanesConf.thetaMax = dynConfig.thetaMax * CV_PI/180;
+  lanesConf.thetaStep = dynConfig.thetaStep * CV_PI/180;
+  lanesConf.ipmVpPortion = dynConfig.ipmVpPortion;
+  lanesConf.getEndPoints = dynConfig.getEndPoints;
+  lanesConf.group = dynConfig.group;
+  lanesConf.groupThreshold = dynConfig.groupThreshold;
+  lanesConf.ransac = dynConfig.ransac;
+
+  lanesConf.ransacLineNumSamples = dynConfig.ransacLineNumSamples;
+  lanesConf.ransacLineNumIterations = dynConfig.ransacLineNumIterations;
+  lanesConf.ransacLineNumGoodFit = dynConfig.ransacLineNumGoodFit;
+  lanesConf.ransacLineThreshold = dynConfig.ransacLineThreshold;
+  lanesConf.ransacLineScoreThreshold = dynConfig.ransacLineScoreThreshold;
+  lanesConf.ransacLineBinarize = dynConfig.ransacLineBinarize;
+  lanesConf.ransacLineWindow = dynConfig.ransacLineWindow;
+
+  lanesConf.ransacSplineNumSamples = dynConfig.ransacSplineNumSamples;
+  lanesConf.ransacSplineNumIterations = dynConfig.ransacSplineNumIterations;
+  lanesConf.ransacSplineNumGoodFit = dynConfig.ransacSplineNumGoodFit;
+  lanesConf.ransacSplineThreshold = dynConfig.ransacSplineThreshold;
+  lanesConf.ransacSplineScoreThreshold = dynConfig.ransacSplineScoreThreshold;
+  lanesConf.ransacSplineBinarize = dynConfig.ransacSplineBinarize;
+  lanesConf.ransacSplineWindow = dynConfig.ransacSplineWindow;
+
+  lanesConf.ransacSplineDegree = dynConfig.ransacSplineDegree;
+
+  lanesConf.ransacSpline = dynConfig.ransacSpline;
+  lanesConf.ransacLine = dynConfig.ransacLine;
+  lanesConf.ransacSplineStep = dynConfig.ransacSplineStep;
+
+  lanesConf.overlapThreshold = dynConfig.overlapThreshold;
+
+  lanesConf.localizeAngleThreshold = dynConfig.localizeAngleThreshold;
+  lanesConf.localizeNumLinePixels = dynConfig.localizeNumLinePixels;
+
+  lanesConf.extendAngleThreshold = dynConfig.extendAngleThreshold;
+  lanesConf.extendMeanDirAngleThreshold = dynConfig.extendMeanDirAngleThreshold;
+  lanesConf.extendLinePixelsTangent = dynConfig.extendLinePixelsTangent;
+  lanesConf.extendLinePixelsNormal = dynConfig.extendLinePixelsNormal;
+  lanesConf.extendContThreshold = dynConfig.extendContThreshold;
+  lanesConf.extendDeviationThreshold = dynConfig.extendDeviationThreshold;
+  lanesConf.extendRectTop = dynConfig.extendRectTop;
+  lanesConf.extendRectBottom = dynConfig.extendRectBottom;
+
+  lanesConf.extendIPMAngleThreshold = dynConfig.extendIPMAngleThreshold;
+  lanesConf.extendIPMMeanDirAngleThreshold = dynConfig.extendIPMMeanDirAngleThreshold;
+  lanesConf.extendIPMLinePixelsTangent = dynConfig.extendIPMLinePixelsTangent;
+  lanesConf.extendIPMLinePixelsNormal = dynConfig.extendIPMLinePixelsNormal;
+  lanesConf.extendIPMContThreshold = dynConfig.extendIPMContThreshold;
+  lanesConf.extendIPMDeviationThreshold = dynConfig.extendIPMDeviationThreshold;
+  lanesConf.extendIPMRectTop = dynConfig.extendIPMRectTop;
+  lanesConf.extendIPMRectBottom = dynConfig.extendIPMRectBottom;
+
+  lanesConf.splineScoreJitter = dynConfig.splineScoreJitter;
+  lanesConf.splineScoreLengthRatio = dynConfig.splineScoreLengthRatio;
+  lanesConf.splineScoreAngleRatio = dynConfig.splineScoreAngleRatio;
+  lanesConf.splineScoreStep = dynConfig.splineScoreStep;
+
+  lanesConf.splineTrackingNumAbsentFrames = dynConfig.splineTrackingNumAbsentFrames;
+  lanesConf.splineTrackingNumSeenFrames = dynConfig.splineTrackingNumSeenFrames;
+
+  lanesConf.mergeSplineThetaThreshold = dynConfig.mergeSplineThetaThreshold;
+  lanesConf.mergeSplineRThreshold = dynConfig.mergeSplineRThreshold;
+  lanesConf.mergeSplineMeanThetaThreshold = dynConfig.mergeSplineMeanThetaThreshold;
+  lanesConf.mergeSplineMeanRThreshold = dynConfig.mergeSplineMeanRThreshold;
+  lanesConf.mergeSplineCentroidThreshold = dynConfig.mergeSplineCentroidThreshold;
+
+  lanesConf.lineTrackingNumAbsentFrames = dynConfig.lineTrackingNumAbsentFrames;
+  lanesConf.lineTrackingNumSeenFrames = dynConfig.lineTrackingNumSeenFrames;
+
+  lanesConf.mergeLineThetaThreshold = dynConfig.mergeLineThetaThreshold;
+  lanesConf.mergeLineRThreshold = dynConfig.mergeLineRThreshold;
+
+  lanesConf.numStrips = dynConfig.numStrips;
+
+
+  lanesConf.checkSplines = dynConfig.checkSplines;
+  lanesConf.checkSplinesCurvenessThreshold = dynConfig.checkSplinesCurvenessThreshold;
+  lanesConf.checkSplinesLengthThreshold = dynConfig.checkSplinesLengthThreshold;
+  lanesConf.checkSplinesThetaDiffThreshold = dynConfig.checkSplinesThetaDiffThreshold;
+  lanesConf.checkSplinesThetaThreshold = dynConfig.checkSplinesThetaThreshold;
+
+  lanesConf.checkIPMSplines = dynConfig.checkIPMSplines;
+  lanesConf.checkIPMSplinesCurvenessThreshold = dynConfig.checkIPMSplinesCurvenessThreshold;
+  lanesConf.checkIPMSplinesLengthThreshold = dynConfig.checkIPMSplinesLengthThreshold;
+  lanesConf.checkIPMSplinesThetaDiffThreshold = dynConfig.checkIPMSplinesThetaDiffThreshold;
+  lanesConf.checkIPMSplinesThetaThreshold = dynConfig.checkIPMSplinesThetaThreshold;
+
+  lanesConf.finalSplineScoreThreshold = dynConfig.finalSplineScoreThreshold;
+
+  lanesConf.useGroundPlane = dynConfig.useGroundPlane;
+
+  lanesConf.checkColor = dynConfig.checkColor;
+  lanesConf.checkColorNumBins = dynConfig.checkColorNumBins;
+  lanesConf.checkColorWindow = dynConfig.checkColorWindow;
+  lanesConf.checkColorNumYellowMin = dynConfig.checkColorNumYellowMin;
+  lanesConf.checkColorRGMin = dynConfig.checkColorRGMin;
+  lanesConf.checkColorRGMax = dynConfig.checkColorRGMax;
+  lanesConf.checkColorGBMin = dynConfig.checkColorGBMin;
+  lanesConf.checkColorRBMin = dynConfig.checkColorRBMin;
+  lanesConf.checkColorRBFThreshold = dynConfig.checkColorRBFThreshold;
+  lanesConf.checkColorRBF = dynConfig.checkColorRBF;
+
+  lanesConf.ipmWindowClear = dynConfig.ipmWindowClear;
+  lanesConf.ipmWindowLeft = dynConfig.ipmWindowLeft;
+  lanesConf.ipmWindowRight = dynConfig.ipmWindowRight;
+
+  lanesConf.checkLaneWidth = dynConfig.checkLaneWidth;
+  lanesConf.checkLaneWidthMean = dynConfig.checkLaneWidthMean;
+  lanesConf.checkLaneWidthStd = dynConfig.checkLaneWidthStd;
+  LaneDetector::DEBUG_LINES = dynConfig.debug_lines? 1 : 0;
 }
 
 };
