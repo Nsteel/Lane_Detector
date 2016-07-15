@@ -53,14 +53,18 @@ void processImage(LaneDetector::CameraInfo& cameraInfo, LaneDetector::LaneDetect
 
   if(currentFrame_ptr) {
 
-    // detect lanes
-    std::vector<LaneDetector::Line> lanes;
+    // detect bounding boxes arround the lanes
+    std::vector<LaneDetector::Box> boxes;
     cv::Mat originalImg = currentFrame_ptr->image;
     preproc.preprocess(originalImg);
-    extractor.extract(originalImg, lanes);
-    fitting_phase.fitting(originalImg, originalImg, lanes);
+    cv::Mat preprocessed = originalImg.clone();
+    lane_detector::utils::scaleMat(originalImg, originalImg);
+    if(originalImg.channels() == 1) cv::cvtColor(originalImg, originalImg, CV_GRAY2BGR);
+    extractor.extract(originalImg, preprocessed, boxes);
+    fitting_phase.fitting(originalImg, preprocessed, boxes);
     cv::imshow("Out", originalImg);
     cv::waitKey(1);
+    cv::line(currentFrame_ptr->image, cv::Point((currentFrame_ptr->image.cols-1)/2, 0), cv::Point((currentFrame_ptr->image.cols-1)/2, currentFrame_ptr->image.rows), cv::Scalar(0, 255, 239), 1);
        // print lanes
         /*for(int i=0; i<splines.size(); i++)
          {

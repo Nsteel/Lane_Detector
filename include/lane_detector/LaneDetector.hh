@@ -45,6 +45,8 @@ typedef struct Line
   FLOAT_POINT2D endPoint;
   ///color of line
   LineColor color;
+  ///Slope type of the line (SLOPE_INCREASING, SLOPE_DECREASING)
+  SlopeType slope_type;
   ///score of line
   float score;
 } Line;
@@ -54,8 +56,8 @@ typedef struct Box
 {
   ///Rectangle of the box
   CvRect box;
-  ///Slope type of the line inside the box
-  SlopeType line_slope_type;
+  //Line inside the box
+  Line line;
 } Box;
 
 /// Spline structure
@@ -827,8 +829,18 @@ void mcvFitRansacLine(const CvMat *image, int numSamples, int numIterations,
  * \param size the size of image containing the lines
  * \param boxes a vector of output bounding boxes
  */
-void mcvGetLinesBoundingBoxesWithSlope(const vector<Line> &lines, LineType type,
+void mcvGetLinesBoundingBoxesVec(vector<Line> &lines, LineType type,
                               CvSize size, vector<Box> &boxes);
+
+/** \brief This function groups together bounding boxes (with the line inside it)
+*
+* \param size the size of image containing the lines
+* \param boxes a vector of output grouped bounding boxes
+* \param type the type of lines (LINE_HORIZONTAL or LINE_VERTICAL)
+* \param groupThreshold the threshold used for grouping (ratio of overlap)
+*/
+void mcvGroupBoundingBoxesVec(vector<Box> &boxes, LineType type,
+                              float groupThreshold);
 
 /** This functions fits a line using the orthogonal distance to the line
     by minimizing the sum of squares of this distance.

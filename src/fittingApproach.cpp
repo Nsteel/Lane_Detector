@@ -8,24 +8,33 @@
 #include <mrpt/random.h>
 
 
-void FittingApproach::fitting(cv::Mat& roi, std::vector<cv::Point>& splinePoints)
+void FittingApproach::fitting(cv::Mat& mat, cv::Rect& box, std::vector<cv::Point>& splinePoints)
 {
 
         SWRI_PROFILE("Fitting_Spline");
 
-        std::vector<TPoint2D> points;
-        std::vector<cv::KalmanFilter> kalmanFilters {cv::KalmanFilter(8,4), cv::KalmanFilter(8,4), cv::KalmanFilter(8,4)};
+        cv::Rect ransac_box = box;
+        //Resize the box for ransac, in order to avoid noise.
+        ransac_box += cv::Point(0, 25);
+        ransac_box -= cv::Size(0, 50);
+        cv::Mat roi = mat.clone();
+        cv::Mat ransac_window = mat.clone();
+        lane_detector::utils::setMat(roi, box);
+        lane_detector::utils::setMat(ransac_window, ransac_box);
 
-        for(int i=0; i < roi.rows; i++)
+        std::vector<TPoint2D> points;
+        //std::vector<cv::KalmanFilter> kalmanFilters {cv::KalmanFilter(8,4), cv::KalmanFilter(8,4), cv::KalmanFilter(8,4)};
+
+        for(int i=0; i < ransac_window.rows; i++)
         {
-                cv::Vec3f* pixel = roi.ptr<cv::Vec3f>(i);
-                for(int j=0; j<roi.cols; j++)
+                float* pixel = ransac_window.ptr<float>(i);
+                for(int j=0; j<ransac_window.cols; j++)
                 {
-                        float value = pixel[j][0];
+                        float value = pixel[j];
                         //ROS_INFO("Val:%f", value);
                         if(value > 0)
                         {
-                          TPoint2D p(roi.rows-1-i, j);
+                          TPoint2D p(ransac_window.rows-1-i, j);
                           points.push_back(p);
                         }
                 }
@@ -56,13 +65,14 @@ void FittingApproach::fitting(cv::Mat& roi, std::vector<cv::Point>& splinePoints
             //ROS_INFO("Start:%f, end:%f", start_x, end_x);
             bool is_inlier = false;
             double y;
+            //TODO improve for
             for(double x = start_x; x <= end_x; x++) {
               best_model.query(x, y, is_inlier);
               //ROS_INFO("Inlier:%i, x:%f", is_inlier, x);
               float aux_x = y;
-              float aux_y = roi.rows-1-x;
+              float aux_y = mat.rows-1-x;
               if(is_inlier) {
-                //cv::circle(roi, cv::Point(cvRound(aux_x), cvRound(aux_y)), 2, cv::Scalar(255,0,0), 2);
+                //cv::circle(ransac_window, cv::Point(cvRound(aux_x), cvRound(aux_y)), 2, cv::Scalar(255,0,0), 2);
                 splinePoints.push_back(cv::Point(cvRound(aux_x), cvRound(aux_y)));
               }
           }

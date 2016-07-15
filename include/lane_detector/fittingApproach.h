@@ -14,7 +14,7 @@ class FittingApproach {
 public:
         FittingApproach(){
         };
-        void fitting(cv::Mat& preprocessed, std::vector<cv::Point>& splinePoints);
+        void fitting(cv::Mat& mat, cv::Rect& box, std::vector<cv::Point>& splinePoints);
 };
 
 #endif /* FITTINGAPPROACH_H_ */

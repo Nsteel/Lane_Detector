@@ -25,7 +25,7 @@ public:
         };
         inline void setConfig(lane_detector::DetectorConfig& config) {
                 this->config = config;
-                utils::translateConfiguration(config, this->lanesConf);
+                lane_detector::utils::translateConfiguration(config, this->lanesConf);
         };
         void preprocess(cv::Mat& img);
 private:

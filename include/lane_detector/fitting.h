@@ -22,12 +22,16 @@ public:
         };
         inline void setConfig(lane_detector::DetectorConfig& config) {
                 this->config = config;
-                utils::translateConfiguration(config, this->lanesConf);
+                lane_detector::utils::translateConfiguration(config, this->lanesConf);
         };
-        void fitting(cv::Mat& original, cv::Mat& preprocessed, std::vector<LaneDetector::Line>& lines);
+        void fitting(cv::Mat& original, cv::Mat& preprocessed, std::vector<LaneDetector::Box>& boxes);
 private:
         lane_detector::DetectorConfig config;
         LaneDetector::LaneDetectorConf lanesConf;
+        cv::Point last_left_centroid = cv::Point(0,0);
+        cv::Point last_right_centroid = cv::Point(0,0);
+        uint32_t count_non_valid = 0;
+        //uint32_t count_non_right = 0;
 };
 
 #endif /* FITTING_H_ */

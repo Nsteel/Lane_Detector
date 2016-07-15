@@ -20,9 +20,9 @@ public:
         };
         inline void setConfig(lane_detector::DetectorConfig& config) {
                 this->config = config;
-                utils::translateConfiguration(config, this->lanesConf);
+                lane_detector::utils::translateConfiguration(config, this->lanesConf);
         };
-        void extract(cv::Mat& preprocessed, std::vector<LaneDetector::Line>& features);
+        void extract(cv::Mat& original, cv::Mat& preprocessed, std::vector<LaneDetector::Box>& features);
 private:
         lane_detector::DetectorConfig config;
         LaneDetector::LaneDetectorConf lanesConf;
