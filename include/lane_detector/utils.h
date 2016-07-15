@@ -33,6 +33,24 @@ namespace lane_detector{
 
     inline bool sortPointsY (const cv::Point& p1, const cv::Point& p2) { return (p1.y < p2.y); }
 
+    /**
+     * This function draws a spline on an image
+     *
+     * \param inImage the input/output image
+     * \param splinePoints vector of the spline points
+     * \param color color of the spline
+     */
+    inline void drawSpline(cv::Mat inImage, const std::vector<cv::Point>& splinePoints, const cv::Scalar& color) {
+      const cv::Point *pts = (const cv::Point*) cv::Mat(splinePoints).data;
+      int npts = cv::Mat(splinePoints).rows;
+
+      cv::polylines(inImage, &pts,&npts, 1,
+                  false, 			// draw open contour
+                      color,// colour RGB ordering (here = green)
+                  2 		        // line thickness
+                  );
+    }
+
     inline bool compareBoxes (const LaneDetector::Box& b1, const LaneDetector::Box& b2) { return (b1.line.score > b2.line.score); }
 
     /** \brief This function resize the bounding boxes
