@@ -18,7 +18,10 @@
 
 class Fitting {
 public:
-        Fitting(){
+        inline Fitting(){
+          kalmanFilters.push_back(cv::KalmanFilter(4,2,0));
+          kalmanFilters.push_back(cv::KalmanFilter(4,2,0));
+          kalmanFilters.push_back(cv::KalmanFilter(4,2,0));
         };
         inline void setConfig(lane_detector::DetectorConfig& config) {
                 this->config = config;
@@ -26,12 +29,16 @@ public:
         };
         void fitting(cv::Mat& original, cv::Mat& preprocessed, std::vector<LaneDetector::Box>& boxes);
 private:
+        void initTracking(const std::vector<LaneDetector::Box>& ipmBoxes);
+        void trackBoxes(std::vector<LaneDetector::Box>& ipmBoxes);
         lane_detector::DetectorConfig config;
         LaneDetector::LaneDetectorConf lanesConf;
-        cv::Point last_left_centroid = cv::Point(0,0);
-        cv::Point last_right_centroid = cv::Point(0,0);
+        cv::Point last_line_startPoint = cv::Point(0,0);
+        cv::Point last_line_endPoint = cv::Point(0,0);
+        std::vector<cv::KalmanFilter> kalmanFilters;
         uint32_t count_non_valid = 0;
-        //uint32_t count_non_right = 0;
+        uint32_t count_non_right = 0;
+        bool kf_initialized = false;
 };
 
 #endif /* FITTING_H_ */

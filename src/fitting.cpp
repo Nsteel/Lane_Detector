@@ -2,6 +2,7 @@
 #include <opencv2/highgui/highgui.hpp>
 #include <swri_profiler/profiler.h>
 
+
 void Fitting::fitting(cv::Mat& original, cv::Mat& preprocessed, std::vector<LaneDetector::Box>& ipmBoxes)
 {
 
@@ -13,6 +14,13 @@ void Fitting::fitting(cv::Mat& original, cv::Mat& preprocessed, std::vector<Lane
         std::vector< std::vector<cv::Point> > splines;
         std::vector<cv::Point> centroids;
         cv::Point car_position(200, lanesConf.ipmHeight-1);
+
+        if(!kf_initialized && ipmBoxes.size() == 3) {
+          initTracking(ipmBoxes);
+          kf_initialized = true;
+        }
+
+        if(kf_initialized) trackBoxes(ipmBoxes);
 
         for(LaneDetector::Box box : ipmBoxes) {
           cv::Rect bounding_box = box.box;
@@ -40,7 +48,7 @@ void Fitting::fitting(cv::Mat& original, cv::Mat& preprocessed, std::vector<Lane
         int closest_idx = 0;
         int second_closest_idx = 0;
         //std::cout << "centroids: " << centroids.size() << std::endl;
-        if(centroids.size() > 2) {
+        if(centroids.size() >= 2) {
           int distance_0 = std::abs(centroids[0].x - car_position.x);
           int distance_1 = std::abs(centroids[1].x - car_position.x);
           if(distance_0 < distance_1) {
@@ -73,12 +81,6 @@ void Fitting::fitting(cv::Mat& original, cv::Mat& preprocessed, std::vector<Lane
               second_min_distance = current_distance;
             }
           }
-        }
-        else if(centroids.size() == 2) {
-          closest = centroids[0];
-          second_closest = centroids[1];
-          closest_idx = 0;
-          second_closest_idx = 1;
         }
         //std::cout << "splines size: " << splines.size() << std::endl;
         /*if(splines.size() == 3) {
@@ -133,4 +135,77 @@ void Fitting::fitting(cv::Mat& original, cv::Mat& preprocessed, std::vector<Lane
         }
 
       //cv::line(original, cv::Point(car_position.x, 0), cv::Point(car_position.x, lanesConf.ipmHeight-1), cv::Scalar(0, 255, 239), 1);
+}
+
+void Fitting::initTracking(const std::vector<LaneDetector::Box>& ipmBoxes) {
+  for(int i = 0; i < 3; i++) {
+    cv::KalmanFilter kf = kalmanFilters[i];
+    kf.transitionMatrix = *(cv::Mat_<float>(4, 4) << 1,0,1/30,0,
+                                                      0,1,0,1/30,
+                                                      0,0,0,1);
+    kf.statePre.at<float>(0) = ipmBoxes[i].line.startPoint.x;
+    kf.statePre.at<float>(1) = ipmBoxes[i].line.endPoint.x;
+    kf.statePre.at<float>(2) = 0;
+    kf.statePre.at<float>(3) = 0;
+    setIdentity(kf.measurementMatrix);
+    setIdentity(kf.processNoiseCov, cv::Scalar::all(.05));
+    setIdentity(kf.measurementNoiseCov, cv::Scalar::all(1e-1));
+    setIdentity(kf.errorCovPost, cv::Scalar::all(.1));
+  }
+}
+
+void Fitting::trackBoxes(std::vector<LaneDetector::Box>& ipmBoxes) {
+  std::vector<LaneDetector::Box> boxes = ipmBoxes;
+  std::vector<LaneDetector::Line> lines;
+
+  for(int i = 0; i < 3; i++) {
+    cv::KalmanFilter kf = kalmanFilters[i];
+    cv::Mat prediction = kf.predict();
+    float x_start = prediction.at<float>(0);
+    float x_end = prediction.at<float>(1);
+    float min_diff = 9999;
+    int min_idx = 0;
+    std::cout << "x_end: " << x_end << std::endl;
+    if(boxes.size() > 0 ) {
+      for(int j = 0; j < boxes.size(); j++) {
+        float current_x_end = boxes[j].line.endPoint.x;
+        float current_diff = std::fabs(x_end - current_x_end);
+        if(current_diff < min_diff) {
+          min_diff = current_diff;
+          min_idx = j;
+        }
+      }
+      std::cout << "mea: " << boxes[min_idx].line.endPoint.x << std::endl;
+      cv::Mat_<float> measurement(2,1);
+      measurement(0) = boxes[min_idx].line.startPoint.x;
+      measurement(1) = boxes[min_idx].line.endPoint.x;
+      cv::Mat estimated = kf.correct(measurement);
+      CvPoint2D32f estimated_startPoint = {estimated.at<float>(0), 0};
+      CvPoint2D32f estimated_endPoint = {estimated.at<float>(1), lanesConf.ipmHeight-1};
+      LaneDetector::Line estimated_line = {estimated_startPoint, estimated_endPoint};
+      lines.push_back(estimated_line);
+      boxes.erase(boxes.begin()+min_idx);
+  }
+
+  else { //The line was missing
+    CvPoint2D32f predicted_startPoint = {x_start, 0};
+    CvPoint2D32f predicted_endPoint = {x_end, lanesConf.ipmHeight-1};
+    LaneDetector::Line predicted_line = {predicted_startPoint, predicted_endPoint};
+    lines.push_back(predicted_line);
+  }
+
+  ipmBoxes.clear();
+  mcvGetLinesBoundingBoxesVec(lines, LaneDetector::LINE_VERTICAL, cvSize(lanesConf.ipmWidth-1, lanesConf.ipmHeight-1), ipmBoxes);
+    /*kf.transitionMatrix = *(cv::Mat_<float>(4, 4) << 1,0,1,0,
+                                                      0,1,0,1,
+                                                      0,0,0,1);
+    kf.statePre.at<float>(0) = ipmBoxes[i].line.startPoint.x;
+    kf.statePre.at<float>(1) = ipmBoxes[i].line.endPoint.x;
+    kf.statePre.at<float>(2) = 0;
+    kf.statePre.at<float>(3) = 0;
+    setIdentity(kf.measurementMatrix);
+    setIdentity(kf.processNoiseCov, cv::Scalar::all(1e-4));
+    setIdentity(kf.measurementNoiseCov, cv::Scalar::all(1e-1));
+    setIdentity(kf.errorCovPost, cv::Scalar::all(.1));*/
+  }
 }
