@@ -1,24 +1,6 @@
 #include <lane_detector/lane_tracker/Ctracker.h>
 
-// ---------------------------------------------------------------------------
-// Tracker. Manage tracks. Create, remove, update.
-// ---------------------------------------------------------------------------
-CTracker::CTracker(
-        track_t dt_,
-        track_t Accel_noise_mag_,
-        track_t dist_thres_,
-        size_t maximum_allowed_skipped_frames_,
-        size_t max_trace_length_
-        )
-    :
-      dt(dt_),
-      Accel_noise_mag(Accel_noise_mag_),
-      dist_thres(dist_thres_),
-      maximum_allowed_skipped_frames(maximum_allowed_skipped_frames_),
-      max_trace_length(max_trace_length_),
-	  NextTrackID(0)
-{
-}
+
 // ---------------------------------------------------------------------------
 //param rects input/output bounding boxes
 // ---------------------------------------------------------------------------
@@ -94,7 +76,7 @@ void CTracker::Update(
 				if (Cost[i + assignment[i] * N] > dist_thres)
 				{
 					assignment[i] = -1;
-					tracks[i]->skipped_frames = 1;
+					tracks[i]->skipped_frames++;
 				}
 			}
 			else
@@ -138,6 +120,7 @@ void CTracker::Update(
 		if (assignment[i] != -1) // If we have assigned detect, then update using its coordinates,
 		{
 			tracks[i]->skipped_frames = 0;
+      tracks[i]->seen_frames++;
 			tracks[i]->Update(detections[assignment[i]], rects[assignment[i]], true, max_trace_length);
 		}
 		else				     // if not continue using predictions
@@ -153,7 +136,9 @@ std::vector<cv::Rect> CTracker::getLastRects() {
 
   for (int i = 0; i < tracks.size(); i++)
   {
-    output_rects.push_back(tracks[i]->GetLastRect());
+    if(tracks[i]->seen_frames >= minimum_seen_frames) {
+      output_rects.push_back(tracks[i]->GetLastRect());
+    }
   }
 
   return output_rects;

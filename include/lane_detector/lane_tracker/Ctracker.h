@@ -16,6 +16,7 @@ public:
 		:
 		track_id(trackID),
 		skipped_frames(0),
+		seen_frames(0),
 		prediction(p),
 		lastRect(rect),
 		KF(p, dt, Accel_noise_mag)
@@ -67,6 +68,7 @@ public:
 	std::vector<Point_t> trace;
 	size_t track_id;
 	size_t skipped_frames;
+	size_t seen_frames;
 
 	cv::Rect GetLastRect()
 	{
@@ -84,11 +86,13 @@ private:
 };
 
 // --------------------------------------------------------------------------
+// ---------------------------------------------------------------------------
+// Tracker. Manage tracks. Create, remove, update.
+// ---------------------------------------------------------------------------
 class CTracker
 {
 public:
 	CTracker(){ NextTrackID = 0; };
-	CTracker(track_t dt_, track_t Accel_noise_mag_, track_t dist_thres_ = 60, size_t maximum_allowed_skipped_frames_ = 10, size_t max_trace_length_ = 10);
 
 	enum DistType
 	{
@@ -105,6 +109,7 @@ public:
 	inline void setMaximumAllowedSkippedFrames(size_t maximum_allowed_skipped_frames) { this->maximum_allowed_skipped_frames = maximum_allowed_skipped_frames; };
 	inline void setMaxTraceLength(size_t max_trace_length) { this->max_trace_length = max_trace_length; };
 	inline void setNextTrackID(size_t NextTrackID) { this->NextTrackID = NextTrackID; };
+	inline void setMinimumSeenFrames(size_t minimum_seen_frames) { this->minimum_seen_frames = minimum_seen_frames; };
 
 private:
 	// Шаг времени опроса фильтра
@@ -121,4 +126,6 @@ private:
     size_t max_trace_length;
 
 	size_t NextTrackID;
+
+	size_t minimum_seen_frames;
 };

@@ -15,13 +15,15 @@ void Fitting::fitting(cv::Mat& original, cv::Mat& preprocessed, std::vector<Lane
         std::vector<cv::Point2f> centroids;
         std::vector<cv::Rect> rects;
         cv::Point car_position(200, lanesConf.ipmHeight-1);
-        lane_detector::utils::getBoxesCentroids(ipmBoxes, rects, centroids);
+        lane_detector::utils::boxes2Rects(ipmBoxes, rects);
+        lane_detector::utils::getRectsCentroids(rects, centroids);
         tracker.Update(centroids, rects, CTracker::RectsDist);
         rects = tracker.getLastRects();
-        std::cout << "Lanes Detected: " << tracker.tracks.size() << std::endl;
+        lane_detector::utils::getRectsCentroids(rects, centroids);
+
+        //std::cout << "Lanes Detected: " << tracker.tracks.size() << std::endl;
 
         for(cv::Rect bounding_box : rects) {
-
           fitSpline.fitting(preprocessed, bounding_box, splinePoints);
           std::sort(splinePoints.begin(), splinePoints.end(), lane_detector::utils::sortPointsY);
           splines.push_back(splinePoints);
@@ -77,11 +79,11 @@ void Fitting::fitting(cv::Mat& original, cv::Mat& preprocessed, std::vector<Lane
         }
         //std::cout << "splines size: " << splines.size() << std::endl;
         if(splines.size() == 3) {
-          std::cout << "1: " << splines[0].size() << " 2: " << splines[1].size() << " 3: " << splines[2].size() << std::endl;
+          //std::cout << "1: " << splines[0].size() << " 2: " << splines[1].size() << " 3: " << splines[2].size() << std::endl;
         }
 
-        //cv::circle(original, closest, 2, cv::Scalar(0,255,0), 2);
-        //cv::circle(original, second_closest, 2, cv::Scalar(0,255,0), 2);
+        cv::circle(original, closest, 5, cv::Scalar(0,255,0), 2);
+        cv::circle(original, second_closest, 5, cv::Scalar(0,255,0), 2);
 
         for(int i = 0; i < tracker.tracks.size(); i++) {
           if (tracker.tracks[i]->trace.size() >= 1)
@@ -93,8 +95,8 @@ void Fitting::fitting(cv::Mat& original, cv::Mat& preprocessed, std::vector<Lane
         std::vector<cv::Point> longest_spline;
         std::vector<cv::Point> second_longest_spline;
 
-        std::cout << "splines: " << splines.size() << std::endl;
-        if(splines.size() > 1) std::cout << "closest: " << splines[closest_idx].size() << " second: " << splines[second_closest_idx].size() << std::endl;
+        //std::cout << "splines: " << splines.size() << std::endl;
+        //if(splines.size() > 1) std::cout << "closest: " << splines[closest_idx].size() << " second: " << splines[second_closest_idx].size() << std::endl;
 
         if(splines.size() > 1 && splines[closest_idx].size() > 3 && splines[second_closest_idx].size() > 3) {
           if(splines[closest_idx][0].y < splines[second_closest_idx][0].y)  {
@@ -111,7 +113,7 @@ void Fitting::fitting(cv::Mat& original, cv::Mat& preprocessed, std::vector<Lane
             if(longest_spline[i].y >= second_longest_spline[0].y) {
               middle = cvRound((longest_spline[i].x - second_longest_spline[0].x)/2);
 
-              std::cout << "Middle: " << middle << std::endl;
+              //std::cout << "Middle: " << middle << std::endl;
               break;
             }
           }

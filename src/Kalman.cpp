@@ -34,16 +34,16 @@ TKalmanFilter::TKalmanFilter(Point_t pt, track_t dt, track_t Accel_noise_mag)
 
 	cv::setIdentity(kalman->measurementMatrix);
 
-	/*kalman->processNoiseCov = (cv::Mat_<track_t>(4, 4) <<
+	kalman->processNoiseCov = (cv::Mat_<track_t>(4, 4) <<
 		pow(deltatime,4.0)/4.0	,0						,pow(deltatime,3.0)/2.0		,0,
 		0						,pow(deltatime,4.0)/4.0	,0							,pow(deltatime,3.0)/2.0,
 		pow(deltatime,3.0)/2.0	,0						,pow(deltatime,2.0)			,0,
 		0						,pow(deltatime,3.0)/2.0	,0							,pow(deltatime,2.0));
 
 
-	kalman->processNoiseCov*=Accel_noise_mag;*/
+	kalman->processNoiseCov*=Accel_noise_mag;
 
-	setIdentity(kalman->processNoiseCov, cv::Scalar::all(.05));
+	//setIdentity(kalman->processNoiseCov, cv::Scalar::all(.05));
 
 	setIdentity(kalman->measurementNoiseCov, cv::Scalar::all(0.1));
 

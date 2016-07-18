@@ -23,6 +23,7 @@ void FittingApproach::fitting(cv::Mat& mat, cv::Rect& box, std::vector<cv::Point
         cv::Mat ransac_window = mat.clone();
         lane_detector::utils::setMat(roi, box);
         lane_detector::utils::setMat(ransac_window, ransac_box);
+        box = ransac_box;
         //std::cout << "8" << std::endl;
         std::vector<TPoint2D> points;
 

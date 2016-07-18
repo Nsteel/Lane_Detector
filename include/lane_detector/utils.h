@@ -31,13 +31,20 @@ namespace lane_detector{
           return 180*std::atan(slope)/CV_PI;
     }*/
 
-    inline void getBoxesCentroids(std::vector<LaneDetector::Box>& boxes, std::vector<cv::Rect>& rects, std::vector<cv::Point2f>& centroids) {
+    inline void boxes2Rects(std::vector<LaneDetector::Box>& boxes, std::vector<cv::Rect>& rects) {
+      rects.clear();
       for(LaneDetector::Box box : boxes) {
-        cv::Rect bounding_box = box.box;
-        int centroid_x = cvRound((box.box.x + (box.box.x + box.box.width-1))/2);
-        int centroid_y = cvRound((box.box.y + (box.box.y + box.box.height-1))/2);
+        cv::Rect bounding_rect = box.box;
+        rects.push_back(bounding_rect);
+      }
+    }
+
+    inline void getRectsCentroids(const std::vector<cv::Rect>& rects, std::vector<cv::Point2f>& centroids) {
+      centroids.clear();
+      for(cv::Rect rect : rects) {
+        int centroid_x = cvRound((rect.x + (rect.x + rect.width-1))/2);
+        int centroid_y = cvRound((rect.y + (rect.y + rect.height-1))/2);
         cv::Point2f centroid(centroid_x, centroid_y);
-        rects.push_back(bounding_box);
         centroids.push_back(centroid);
       }
     }

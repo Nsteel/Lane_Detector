@@ -25,10 +25,11 @@ public:
         inline void setConfig(lane_detector::DetectorConfig& config) {
                 this->config = config;
                 lane_detector::utils::translateConfiguration(config, this->lanesConf);
-                tracker.setDt(1.0f);
-                tracker.setAccelNoiseMag(0.1f);
-                tracker.setDistThres(60.f);
-                tracker.setMaximumAllowedSkippedFrames(10);
+                tracker.setDt(config.tracking_dt);
+                tracker.setAccelNoiseMag(config.tracking_acc_noise_magnitude);
+                tracker.setDistThres(config.tracking_dist_threshold);
+                tracker.setMaximumAllowedSkippedFrames(config.tracking_num_absent_frames);
+                tracker.setMinimumSeenFrames(config.tracking_num_seen_frames);
                 tracker.setMaxTraceLength(50);
         };
         void fitting(cv::Mat& original, cv::Mat& preprocessed, std::vector<LaneDetector::Box>& boxes);
