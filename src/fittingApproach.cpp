@@ -13,6 +13,8 @@ void FittingApproach::fitting(cv::Mat& mat, cv::Rect& box, std::vector<cv::Point
 
         SWRI_PROFILE("Fitting_Spline");
 
+        box.y = 0;
+        box.height = mat.rows-1;
         cv::Rect ransac_box = box;
         //Resize the box for ransac, in order to avoid noise.
         ransac_box += cv::Point(0, 25);
@@ -21,9 +23,8 @@ void FittingApproach::fitting(cv::Mat& mat, cv::Rect& box, std::vector<cv::Point
         cv::Mat ransac_window = mat.clone();
         lane_detector::utils::setMat(roi, box);
         lane_detector::utils::setMat(ransac_window, ransac_box);
-
+        //std::cout << "8" << std::endl;
         std::vector<TPoint2D> points;
-        //std::vector<cv::KalmanFilter> kalmanFilters {cv::KalmanFilter(8,4), cv::KalmanFilter(8,4), cv::KalmanFilter(8,4)};
 
         for(int i=0; i < ransac_window.rows; i++)
         {

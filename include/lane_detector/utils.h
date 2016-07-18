@@ -31,6 +31,22 @@ namespace lane_detector{
           return 180*std::atan(slope)/CV_PI;
     }*/
 
+    inline void getBoxesCentroids(std::vector<LaneDetector::Box>& boxes, std::vector<cv::Rect>& rects, std::vector<cv::Point2f>& centroids) {
+      for(LaneDetector::Box box : boxes) {
+        cv::Rect bounding_box = box.box;
+        int centroid_x = cvRound((box.box.x + (box.box.x + box.box.width-1))/2);
+        int centroid_y = cvRound((box.box.y + (box.box.y + box.box.height-1))/2);
+        cv::Point2f centroid(centroid_x, centroid_y);
+        rects.push_back(bounding_box);
+        centroids.push_back(centroid);
+      }
+    }
+
+    template<typename T, typename... Args>
+    std::unique_ptr<T> make_unique(Args&&... args) {
+    return std::unique_ptr<T>(new T(std::forward<Args>(args)...));
+}
+
     inline bool sortPointsY (const cv::Point& p1, const cv::Point& p2) { return (p1.y < p2.y); }
 
     /**
@@ -263,15 +279,29 @@ namespace lane_detector{
     */
     inline void setMat(cv::Mat& inMat, cv::Rect mask) {
      cv::Mat mask_mat = cv::Mat::zeros(inMat.size(), CV_8UC1);
+
+     //clipping the mask
+     if(mask.y < 0) mask.y = 0;
+     else if(mask.y >= inMat.rows) mask.y = inMat.rows-1;
+     if(mask.x < 0) mask.x = 0;
+     else if(mask.x >= inMat.cols) mask.x = inMat.cols-1;
+
+     //std::cout << 1 << std::endl;
      for(int i = mask.y; i < mask.y + mask.height; i++) {
+       //std::cout << 2 << std::endl;
        uchar* pixel = mask_mat.ptr<uchar>(i);
+       //std::cout << 3 << std::endl;
        for(int j = mask.x; j < mask.x + mask.width; j++) {
+         //std::cout << 4 << std::endl;
          pixel[j] = 255;
+         //std::cout << 5 << std::endl;
        }
      }
      cv::Mat aux;
      inMat.copyTo(aux, mask_mat);
+     //std::cout << 6 << std::endl;
      inMat = aux;
+     //std::cout << 7 << std::endl;
     }
 
     /**
