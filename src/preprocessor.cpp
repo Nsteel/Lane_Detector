@@ -1,8 +1,6 @@
 #include <lane_detector/preprocessor.h>
-#include <swri_profiler/profiler.h>
 
 void Preprocessor::preprocess(cv::Mat& img, LaneDetector::IPMInfo& ipmInfo_) {
-        SWRI_PROFILE("Preprocess");
 
         this->ipmInfo = ipmInfo;
         //cv::Mat originalImg = cv::imread("/home/n/Desktop/curve.png");

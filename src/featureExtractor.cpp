@@ -1,13 +1,9 @@
 #include <lane_detector/featureExtractor.h>
 #include <vector>
 #include <iostream>
-#include <swri_profiler/profiler.h>
 
 
 void FeatureExtractor::extract(cv::Mat& original, cv::Mat& preprocessed, std::vector<LaneDetector::Box>& boxes) {
-
-        SWRI_PROFILE("Extract");
-
 
         CvMat preprocessed_mat = preprocessed;
         CvMat* preprocessed_ptr = &preprocessed_mat;

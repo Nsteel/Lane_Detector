@@ -21,7 +21,6 @@
 #include <sstream>
 #include <dynamic_reconfigure/server.h>
 #include <lane_detector/DetectorConfig.h>
-#include <swri_profiler/profiler.h>
 #include <geometry_msgs/PointStamped.h>
 #include <geometry_msgs/PolygonStamped.h>
 #include <lane_detector/LaneDetector.hh>

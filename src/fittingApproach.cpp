@@ -1,6 +1,5 @@
 #include <lane_detector/fittingApproach.h>
 #include <iostream>
-#include <swri_profiler/profiler.h>
 #include <opencv2/highgui/highgui.hpp>
 #include <lane_detector/utils.h>
 #include <lane_detector/fitSpline.h>
@@ -10,8 +9,6 @@
 
 void FittingApproach::fitting(cv::Mat& mat, cv::Rect& box, std::vector<cv::Point>& splinePoints)
 {
-
-        SWRI_PROFILE("Fitting_Spline");
 
         box.y = 0;
         box.height = mat.rows-1;

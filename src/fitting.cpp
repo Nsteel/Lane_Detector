@@ -1,6 +1,5 @@
 #include <lane_detector/fitting.h>
 #include <opencv2/highgui/highgui.hpp>
-#include <swri_profiler/profiler.h>
 #include <algorithm>
 #include <vector>
 
@@ -35,7 +34,6 @@ float Fitting::calcCost(std::vector<cv::Point2f>& combination) {
 
 lane_detector::Lane Fitting::fitting(cv::Mat& original, cv::Mat& preprocessed, LaneDetector::IPMInfo& ipmInfo, std::vector<LaneDetector::Box>& ipmBoxes)
 {
-        SWRI_PROFILE("Fitting");
 
         this->ipmInfo = ipmInfo;
 

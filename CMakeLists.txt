@@ -12,7 +12,6 @@ find_package(catkin REQUIRED COMPONENTS
   std_msgs
   geometry_msgs
   dynamic_reconfigure
-  swri_profiler
 )
 find_package(OpenCV 2 REQUIRED)
 find_package(OpenMP REQUIRED)
@@ -147,12 +146,12 @@ add_dependencies(lane_detector ${PROJECT_NAME}_gencfg)
 ## Specify libraries to link a library or executable target against
 find_library(laneDetector_LIBRARIES LaneDetector /home/n/catkin_ws/src/lane_detector/lib/)
 
-target_link_libraries(PREPROCESSOR ${OpenCV_LIBRARIES} swri_profiler)
-target_link_libraries(EXTRACTOR ${OpenCV_LIBRARIES} swri_profiler)
-target_link_libraries(FITTING_APPROACH ${OpenCV_LIBRARIES} ${MRPT_LIBS} swri_profiler)
+target_link_libraries(PREPROCESSOR ${OpenCV_LIBRARIES})
+target_link_libraries(EXTRACTOR ${OpenCV_LIBRARIES})
+target_link_libraries(FITTING_APPROACH ${OpenCV_LIBRARIES} ${MRPT_LIBS})
 target_link_libraries(KALMAN_FILTER ${OpenCV_LIBRARIES})
 target_link_libraries(TRACKER ${OpenCV_LIBRARIES} KALMAN_FILTER HUNGARIAN_ALG)
-target_link_libraries(FITTING ${OpenCV_LIBRARIES} swri_profiler FITTING_APPROACH TRACKER)
+target_link_libraries(FITTING ${OpenCV_LIBRARIES} FITTING_APPROACH TRACKER)
 target_link_libraries(lane_detector ${catkin_LIBRARIES} PREPROCESSOR FITTING EXTRACTOR)
 target_link_libraries(lane_detector ${OpenCV_LIBRARIES} ${laneDetector_LIBRARIES})
 target_link_libraries(camera_simulator ${OpenCV_LIBRARIES} ${catkin_LIBRARIES})
