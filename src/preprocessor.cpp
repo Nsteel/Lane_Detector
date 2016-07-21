@@ -1,8 +1,10 @@
 #include <lane_detector/preprocessor.h>
 #include <swri_profiler/profiler.h>
 
-void Preprocessor::preprocess(cv::Mat& img) {
+void Preprocessor::preprocess(cv::Mat& img, LaneDetector::IPMInfo& ipmInfo_) {
         SWRI_PROFILE("Preprocess");
+
+        this->ipmInfo = ipmInfo;
         //cv::Mat originalImg = cv::imread("/home/n/Desktop/curve.png");
         CvMat raw_mat = img;
         CvMat* raw_ptr = &raw_mat;
@@ -21,6 +23,7 @@ void Preprocessor::preprocess(cv::Mat& img) {
         cvFilter2D(mat_ptr, mat_ptr, fx); //inImage outImage
         cvFilter2D(mat_ptr, mat_ptr, fy);
         mcvPreprocess(&mat_ptr, &cameraInfo, &ipmInfo, &lanesConf);
+        ipmInfo_ = ipmInfo;
         //LaneDetector::mcvScaleMat(mat_ptr, mat_ptr);
         ROS_DEBUG("xScale: %f, yScale: %f, ymaxLim: %f",ipmInfo.xScale, ipmInfo.yScale, ipmInfo.yLimits[1]);
         img = cv::cvarrToMat(mat_ptr, true);

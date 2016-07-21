@@ -73,6 +73,7 @@ void CTracker::Update(
 		{
 			if (assignment[i] != -1)
 			{
+				//std::cout << "Kalman cost: " << Cost[i + assignment[i] * N] << std::endl;
 				if (Cost[i + assignment[i] * N] > dist_thres)
 				{
 					assignment[i] = -1;

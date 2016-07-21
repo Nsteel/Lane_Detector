@@ -7,6 +7,7 @@
 
 #include <ros/ros.h>
 #include <sensor_msgs/Image.h>
+#include <std_msgs/Int32.h>
 #include <image_transport/image_transport.h>
 #include <cv_bridge/cv_bridge.h>
 #include <sensor_msgs/image_encodings.h>
@@ -49,19 +50,29 @@ void configCallback(lane_detector::DetectorConfig& config, uint32_t level)
         ROS_DEBUG("Config was set");
 }
 
+void drivingOrientationCB(const std_msgs::Int32::ConstPtr& driving_orientation)
+{
+  if(driving_orientation->data == 0)
+      fitting_phase.setDrivingOrientation(lane_detector::on_the_right);
+  else if(driving_orientation->data == 1)
+      fitting_phase.setDrivingOrientation(lane_detector::on_the_left);
+}
+
 void processImage(LaneDetector::CameraInfo& cameraInfo, LaneDetector::LaneDetectorConf& lanesConf) {
 
   if(currentFrame_ptr) {
 
+    //information paramameters of the IPM transform
+    LaneDetector::IPMInfo ipminfo;
     // detect bounding boxes arround the lanes
     std::vector<LaneDetector::Box> boxes;
     cv::Mat originalImg = currentFrame_ptr->image;
-    preproc.preprocess(originalImg);
+    preproc.preprocess(originalImg, ipminfo);
     cv::Mat preprocessed = originalImg.clone();
     lane_detector::utils::scaleMat(originalImg, originalImg);
     if(originalImg.channels() == 1) cv::cvtColor(originalImg, originalImg, CV_GRAY2BGR);
     extractor.extract(originalImg, preprocessed, boxes);
-    fitting_phase.fitting(originalImg, preprocessed, boxes);
+    fitting_phase.fitting(originalImg, preprocessed, ipminfo, boxes);
     cv::imshow("Out", originalImg);
     cv::waitKey(1);
     cv::line(currentFrame_ptr->image, cv::Point((currentFrame_ptr->image.cols-1)/2, 0), cv::Point((currentFrame_ptr->image.cols-1)/2, currentFrame_ptr->image.rows), cv::Scalar(0, 255, 239), 1);
@@ -155,9 +166,11 @@ int main(int argc, char **argv){
          * buffer up before throwing some away.
          */
 
+        ros::Subscriber driving_orientation_sub = nh.subscribe<std_msgs::Int32>("lane_detector/driving_orientation", 1, drivingOrientationCB);
         image_transport::Subscriber image_sub = it.subscribe("/kinect_mono_throttled", 1, readImg);
         resultImg_pub = it.advertise("lane_detector/result", 1);
         detectedPoints_pub = nh.advertise<geometry_msgs::PolygonStamped>("lane_detector/vanishing_point", 1);
+
 
         //ros::MultiThreadedSpinner spinner(0); // Use one thread for core
         //spinner.spin(); // spin() will not return until the node has been shutdown

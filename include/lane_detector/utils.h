@@ -11,8 +11,17 @@
 #include <lane_detector/LaneDetectorOpt.h>
 #include <lane_detector/DetectorConfig.h>
 #include <opencv2/highgui/highgui.hpp>
+#include <vector>
+#include <stdexcept>
+#include <algorithm>
 
 namespace lane_detector{
+
+  enum Driving
+  {
+    on_the_left,
+    on_the_right
+  };
 
     namespace utils {
 
@@ -63,14 +72,14 @@ namespace lane_detector{
      * \param splinePoints vector of the spline points
      * \param color color of the spline
      */
-    inline void drawSpline(cv::Mat inImage, const std::vector<cv::Point>& splinePoints, const cv::Scalar& color) {
+    inline void drawSpline(cv::Mat inImage, const std::vector<cv::Point>& splinePoints, const uint32_t& thickness, const cv::Scalar& color) {
       const cv::Point *pts = (const cv::Point*) cv::Mat(splinePoints).data;
       int npts = cv::Mat(splinePoints).rows;
 
       cv::polylines(inImage, &pts,&npts, 1,
                   false, 			// draw open contour
                       color,// colour RGB ordering (here = green)
-                  2 		        // line thickness
+                  thickness 		        // line thickness
                   );
     }
 
@@ -325,7 +334,20 @@ namespace lane_detector{
        cv::minMaxIdx(inImage, 0, &max);
        inImage = inImage * 1/max;
      }
-   }
+
+     template<class T>
+     inline void combineVectorInPairs(const std::vector<T>& input, std::vector<std::vector<T>>& output) {
+       output.clear();
+       if(input.size() > 1) {
+         for(uint32_t i = 0; i < input.size()-1; i++) {
+           for(uint32_t j = i+1; j < input.size(); j++) {
+             std::vector<T> combination {input[i], input[j]};
+             output.push_back(combination);
+           }
+         }
+       }
+     }
+  }
 };
 
 #endif /* UTILS_H_ */

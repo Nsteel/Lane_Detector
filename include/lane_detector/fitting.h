@@ -20,7 +20,6 @@
 class Fitting {
 public:
         inline Fitting(){
-          //tracker = CTracker(0.2f, 0.1f, 60.0f, 10, 50);
         };
         inline void setConfig(lane_detector::DetectorConfig& config) {
                 this->config = config;
@@ -31,13 +30,21 @@ public:
                 tracker.setMaximumAllowedSkippedFrames(config.tracking_num_absent_frames);
                 tracker.setMinimumSeenFrames(config.tracking_num_seen_frames);
                 tracker.setMaxTraceLength(50);
+                driving_orientation = config.driving_orientation == 0? lane_detector::on_the_right :
+                                                                       lane_detector::on_the_left;
         };
-        void fitting(cv::Mat& original, cv::Mat& preprocessed, std::vector<LaneDetector::Box>& boxes);
+        inline void setDrivingOrientation(lane_detector::Driving driving_orientation) {
+          this->driving_orientation = driving_orientation;
+        }
+        void fitting(cv::Mat& original, cv::Mat& preprocessed, LaneDetector::IPMInfo& ipmInfo, std::vector<LaneDetector::Box>& boxes);
 private:
+        void findCurrentLane(const std::vector<cv::Point2f>& centroids, std::vector<cv::Point2f>& current_lane);
+        float calcCost(std::vector<cv::Point2f>& combination);
         lane_detector::DetectorConfig config;
         LaneDetector::LaneDetectorConf lanesConf;
+        LaneDetector::IPMInfo ipmInfo;
         CTracker tracker;
-        bool kf_initialized = false;
+        lane_detector::Driving driving_orientation;
 };
 
 #endif /* FITTING_H_ */
