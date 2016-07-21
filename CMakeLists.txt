@@ -10,12 +10,14 @@ find_package(catkin REQUIRED COMPONENTS
   cv_bridge
   image_transport
   std_msgs
+  geometry_msgs
   dynamic_reconfigure
   swri_profiler
 )
 find_package(OpenCV 2 REQUIRED)
 find_package(OpenMP REQUIRED)
 find_package(MRPT REQUIRED)
+find_package(message_generation)
 
 ## System dependencies are found with CMake's conventions
 # find_package(Boost REQUIRED COMPONENTS system)
@@ -51,11 +53,10 @@ find_package(MRPT REQUIRED)
 ##   * add every package in MSG_DEP_SET to generate_messages(DEPENDENCIES ...)
 
 ## Generate messages in the 'msg' folder
-# add_message_files(
-#   FILES
-#   Message1.msg
-#   Message2.msg
-# )
+add_message_files(
+   FILES
+   Lane.msg
+)
 
 ## Generate services in the 'srv' folder
 # add_service_files(
@@ -72,10 +73,10 @@ find_package(MRPT REQUIRED)
 # )
 
 ## Generate added messages and services with any dependencies listed here
-# generate_messages(
-#   DEPENDENCIES
-#   sensor_msgs
-# )
+generate_messages(
+  DEPENDENCIES
+  geometry_msgs
+)
 
 ################################################
 ## Declare ROS dynamic reconfigure parameters ##
@@ -106,12 +107,7 @@ generate_dynamic_reconfigure_options(
 ## LIBRARIES: libraries you create in this project that dependent projects also need
 ## CATKIN_DEPENDS: catkin_packages dependent projects also need
 ## DEPENDS: system dependencies of this project that dependent projects also need
-catkin_package(
-#  INCLUDE_DIRS include
-#  LIBRARIES lane_detector
-#  CATKIN_DEPENDS OpenCV roscpp sensor_msgs
-#  DEPENDS system_lib
-)
+catkin_package(CATKIN_DEPENDS message_runtime geometry_msgs)
 
 ###########
 ## Build ##

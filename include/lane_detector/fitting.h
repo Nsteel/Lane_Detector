@@ -16,6 +16,8 @@
 #include <lane_detector/InversePerspectiveMapping.hh>
 #include <lane_detector/fittingApproach.h>
 #include <lane_detector/lane_tracker/Ctracker.h>
+#include <lane_detector/Lane.h>
+#include <geometry_msgs/Point32.h>
 
 class Fitting {
 public:
@@ -36,7 +38,7 @@ public:
         inline void setDrivingOrientation(lane_detector::Driving driving_orientation) {
           this->driving_orientation = driving_orientation;
         }
-        void fitting(cv::Mat& original, cv::Mat& preprocessed, LaneDetector::IPMInfo& ipmInfo, std::vector<LaneDetector::Box>& boxes);
+        lane_detector::Lane fitting(cv::Mat& original, cv::Mat& preprocessed, LaneDetector::IPMInfo& ipmInfo, std::vector<LaneDetector::Box>& boxes);
 private:
         void findCurrentLane(const std::vector<cv::Point2f>& centroids, std::vector<cv::Point2f>& current_lane);
         float calcCost(std::vector<cv::Point2f>& combination);

@@ -33,7 +33,7 @@ float Fitting::calcCost(std::vector<cv::Point2f>& combination) {
   return sqrtf(dist);
 }
 
-void Fitting::fitting(cv::Mat& original, cv::Mat& preprocessed, LaneDetector::IPMInfo& ipmInfo, std::vector<LaneDetector::Box>& ipmBoxes)
+lane_detector::Lane Fitting::fitting(cv::Mat& original, cv::Mat& preprocessed, LaneDetector::IPMInfo& ipmInfo, std::vector<LaneDetector::Box>& ipmBoxes)
 {
         SWRI_PROFILE("Fitting");
 
@@ -41,12 +41,11 @@ void Fitting::fitting(cv::Mat& original, cv::Mat& preprocessed, LaneDetector::IP
 
         cv::Scalar Colors[] = { cv::Scalar(255, 0, 0), cv::Scalar(0, 255, 0), cv::Scalar(0, 0, 255), cv::Scalar(255, 255, 0), cv::Scalar(0, 255, 255), cv::Scalar(255, 0, 255), cv::Scalar(255, 127, 255), cv::Scalar(127, 0, 255), cv::Scalar(127, 0, 127) };
         FittingApproach fitSpline;
-
         std::vector<cv::Point> splinePoints;
         std::vector< std::vector<cv::Point> > splines;
         std::vector<cv::Point2f> centroids;
         std::vector<cv::Rect> rects;
-        cv::Point car_position(200, lanesConf.ipmHeight-1);
+        lane_detector::Lane current_lane;
         lane_detector::utils::boxes2Rects(ipmBoxes, rects);
         lane_detector::utils::getRectsCentroids(rects, centroids);
         tracker.Update(centroids, rects, CTracker::RectsDist);
@@ -110,6 +109,9 @@ void Fitting::fitting(cv::Mat& original, cv::Mat& preprocessed, LaneDetector::IP
 
         std::vector<cv::Point> longest_spline;
         std::vector<cv::Point> second_longest_spline;
+        std::vector<cv::Point> left_spline;
+        std::vector<cv::Point> right_spline;
+        std::vector<cv::Point> guide_spline;
         uint32_t longest_spline_idx = 0;
         uint32_t second_longest_spline_idx = 0;
 
@@ -152,24 +154,55 @@ void Fitting::fitting(cv::Mat& original, cv::Mat& preprocessed, LaneDetector::IP
               second_longest_spline_idx = idx;
           }
 
+          guide_spline = longest_spline;
+
           if(centroids[longest_spline_idx].x > centroids[second_longest_spline_idx].x) {
-            for(int i = 0; i < longest_spline.size(); i++) {
-              longest_spline[i].x -= middle;
-            }
+              right_spline = splines[longest_spline_idx];
+              left_spline = splines[second_longest_spline_idx];
+
+              for(int i = 0; i < guide_spline.size(); i++) {
+                guide_spline[i].x -= middle;
+              }
           }
 
           else {
-            for(int i = 0; i < longest_spline.size(); i++) {
-              longest_spline[i].x += middle;
+            right_spline = splines[second_longest_spline_idx];
+            left_spline = splines[longest_spline_idx];
+
+            for(int i = 0; i < guide_spline.size(); i++) {
+              guide_spline[i].x += middle;
             }
           }
 
           // draw the guide spline
-           if(config.draw_splines) lane_detector::utils::drawSpline(original, longest_spline, 1, cv::Scalar(0, 255, 255));
+           if(config.draw_splines) lane_detector::utils::drawSpline(original, guide_spline, 1, cv::Scalar(0, 255, 255));
 
 
+           //Convert cv::Point to cv::Point2f
+           std::vector<cv::Point2f> left_spline_float = lane_detector::utils::cvtCvPoint2CvPoint2f(left_spline);
+           std::vector<cv::Point2f> right_spline_float = lane_detector::utils::cvtCvPoint2CvPoint2f(right_spline);
+           std::vector<cv::Point2f> guide_spline_float = lane_detector::utils::cvtCvPoint2CvPoint2f(guide_spline);
+
+           //Transform splines to wolrd coordinates (in m)
+           lane_detector::utils::ipmPoints2World(guide_spline_float, guide_spline_float, ipmInfo);
+           lane_detector::utils::ipmPoints2World(right_spline_float, right_spline_float, ipmInfo);
+           lane_detector::utils::ipmPoints2World(left_spline_float, left_spline_float, ipmInfo);
+
+           std::vector<geometry_msgs::Point32> left_spline_ros;
+           std::vector<geometry_msgs::Point32> right_spline_ros;
+           std::vector<geometry_msgs::Point32> guide_spline_ros;
+
+           //Convert Cv-Points to ROS-points (geometry_msgs::Point32)
+           lane_detector::utils::cvtCvPoints2ROSPoints(guide_spline_float, guide_spline_ros);
+           lane_detector::utils::cvtCvPoints2ROSPoints(right_spline_float, right_spline_ros);
+           lane_detector::utils::cvtCvPoints2ROSPoints(left_spline_float, left_spline_ros);
+
+           current_lane.guide_line = guide_spline_ros;
+           current_lane.right_line = right_spline_ros;
+           current_lane.left_line = left_spline_ros;
         }
       //cv::line(original, cv::Point(car_position.x, 0), cv::Point(car_position.x, lanesConf.ipmHeight-1), cv::Scalar(0, 255, 239), 1);
+      return current_lane;
 }
 
 // -------------------------------------------------

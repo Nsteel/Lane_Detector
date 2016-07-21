@@ -11,6 +11,7 @@
 #include <lane_detector/LaneDetectorOpt.h>
 #include <lane_detector/DetectorConfig.h>
 #include <opencv2/highgui/highgui.hpp>
+#include <geometry_msgs/Point32.h>
 #include <vector>
 #include <stdexcept>
 #include <algorithm>
@@ -347,6 +348,51 @@ namespace lane_detector{
          }
        }
      }
+
+    //Transform a vector of points of the ipm image to world coordinates (in meters)
+    inline void ipmPoints2World(const std::vector<cv::Point2f>& input, std::vector<cv::Point2f>& output, const LaneDetector::IPMInfo& ipmInfo) {
+      std::vector<cv::Point2f> out;
+      for(cv::Point2f p : input) {
+        CvPoint2D32f p_copy = p;
+        LaneDetector::mcvPointImIPM2World(&p_copy, &ipmInfo);
+        p_copy.x  /= 1000; //convert to meters
+        p_copy.y  /= 1000;
+        out.push_back(p_copy);
+      }
+      output = out;
+    }
+
+    //Converts a single CV-point (cv::Point) in ROS-point (geometry_msgs::Point32)
+    // ROS conventions are being used
+    geometry_msgs::Point32 cvtCvPointToROSPoint(const cv::Point2f& point) {
+        geometry_msgs::Point32 point32;
+        point32.x = point.y;
+        point32.y = -point.x;
+        point32.z = 0;
+
+        std::cout << "x: " << point32.x << " y: " << point32.y << std::endl;
+        return point32;
+    }
+
+    //Converts a vector of CV-points (cv::Point) in ROS-points (geometry_msgs::Point32)
+    inline void cvtCvPoints2ROSPoints(const std::vector<cv::Point2f>& input, std::vector<geometry_msgs::Point32>& output) {
+      output.clear();
+      for(cv::Point2f p : input) {
+        geometry_msgs::Point32 p_ros = cvtCvPointToROSPoint(p);
+        output.push_back(p_ros);
+      }
+    }
+
+    //Converts a vector of CV-points (cv::Point) in CV float points (cv::Point2f)
+    inline std::vector<cv::Point2f> cvtCvPoint2CvPoint2f(const std::vector<cv::Point>& input) {
+      std::vector<cv::Point2f> output;
+      for(cv::Point p : input) {
+        cv::Point2f p_float = p;
+        output.push_back(p_float);
+      }
+      return output;
+    }
+
   }
 };
 

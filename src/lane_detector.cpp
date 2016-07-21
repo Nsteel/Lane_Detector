@@ -35,7 +35,7 @@ Preprocessor preproc;
 FeatureExtractor extractor;
 Fitting fitting_phase;
 image_transport::Publisher resultImg_pub;
-ros::Publisher detectedPoints_pub;
+ros::Publisher lane_pub;
 lane_detector::DetectorConfig dynConfig;
 LaneDetector::CameraInfo cameraInfo;
 LaneDetector::LaneDetectorConf lanesConf;
@@ -72,7 +72,8 @@ void processImage(LaneDetector::CameraInfo& cameraInfo, LaneDetector::LaneDetect
     lane_detector::utils::scaleMat(originalImg, originalImg);
     if(originalImg.channels() == 1) cv::cvtColor(originalImg, originalImg, CV_GRAY2BGR);
     extractor.extract(originalImg, preprocessed, boxes);
-    fitting_phase.fitting(originalImg, preprocessed, ipminfo, boxes);
+    lane_detector::Lane current_lane = fitting_phase.fitting(originalImg, preprocessed, ipminfo, boxes);
+    lane_pub.publish(current_lane);
     cv::imshow("Out", originalImg);
     cv::waitKey(1);
     cv::line(currentFrame_ptr->image, cv::Point((currentFrame_ptr->image.cols-1)/2, 0), cv::Point((currentFrame_ptr->image.cols-1)/2, currentFrame_ptr->image.rows), cv::Scalar(0, 255, 239), 1);
@@ -169,7 +170,7 @@ int main(int argc, char **argv){
         ros::Subscriber driving_orientation_sub = nh.subscribe<std_msgs::Int32>("lane_detector/driving_orientation", 1, drivingOrientationCB);
         image_transport::Subscriber image_sub = it.subscribe("/kinect_mono_throttled", 1, readImg);
         resultImg_pub = it.advertise("lane_detector/result", 1);
-        detectedPoints_pub = nh.advertise<geometry_msgs::PolygonStamped>("lane_detector/vanishing_point", 1);
+        lane_pub = nh.advertise<lane_detector::Lane>("lane_detector/lane", 1);
 
 
         //ros::MultiThreadedSpinner spinner(0); // Use one thread for core
