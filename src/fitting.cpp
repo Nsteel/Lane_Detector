@@ -117,7 +117,7 @@ lane_detector::Lane Fitting::fitting(cv::Mat& original, cv::Mat& preprocessed, L
         //if(splines.size() > 1) std::cout << "closest: " << splines[closest_idx].size() << " second: " << splines[second_closest_idx].size() << std::endl;
 
         if(splines.size() > 1 && splines[closest_idx].size() > 3 && splines[second_closest_idx].size() > 3) {
-          if(splines[closest_idx][0].y < splines[second_closest_idx][0].y)  {
+          if(splines[closest_idx][0].y > splines[second_closest_idx][0].y)  {
             longest_spline = splines[closest_idx];
             second_longest_spline = splines[second_closest_idx];
             longest_spline_idx = closest_idx;
@@ -132,7 +132,7 @@ lane_detector::Lane Fitting::fitting(cv::Mat& original, cv::Mat& preprocessed, L
 
           int middle = 0;
           for(int i = 0; i < longest_spline.size(); i++) {
-            if(longest_spline[i].y >= second_longest_spline[0].y) {
+            if(longest_spline[i].y <= second_longest_spline[0].y) {
               middle = std::abs(cvRound((longest_spline[i].x - second_longest_spline[0].x)/2));
 
               //std::cout << "Middle: " << middle << std::endl;
@@ -140,8 +140,8 @@ lane_detector::Lane Fitting::fitting(cv::Mat& original, cv::Mat& preprocessed, L
             }
           }
 
-          uint32_t height_spline1 = longest_spline.back().y - longest_spline.front().y;
-          uint32_t height_spline2 = second_longest_spline.back().y - second_longest_spline.front().y;
+          uint32_t height_spline1 = longest_spline.front().y - longest_spline.back().y;
+          uint32_t height_spline2 = second_longest_spline.front().y - second_longest_spline.back().y;
           //std::cout << "height spline1: " << height_spline1 << "height spline2: " << height_spline2 << std::endl;
           if(height_spline1 < height_spline2) {
               std::vector<cv::Point> aux = longest_spline;

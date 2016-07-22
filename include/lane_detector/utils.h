@@ -64,7 +64,7 @@ namespace lane_detector{
     return std::unique_ptr<T>(new T(std::forward<Args>(args)...));
 }
 
-    inline bool sortPointsY (const cv::Point& p1, const cv::Point& p2) { return (p1.y < p2.y); }
+    inline bool sortPointsY (const cv::Point& p1, const cv::Point& p2) { return (p1.y > p2.y); }
 
     /**
      * This function draws a spline on an image
@@ -362,7 +362,7 @@ namespace lane_detector{
       output = out;
     }
 
-    //Converts a single CV-point (cv::Point) in ROS-point (geometry_msgs::Point32)
+    //Converts a single CV-point (cv::Point2f) in ROS-point (geometry_msgs::Point32)
     // ROS conventions are being used
     geometry_msgs::Point32 cvtCvPointToROSPoint(const cv::Point2f& point) {
         geometry_msgs::Point32 point32;
@@ -370,11 +370,11 @@ namespace lane_detector{
         point32.y = -point.x;
         point32.z = 0;
 
-        std::cout << "x: " << point32.x << " y: " << point32.y << std::endl;
+        std::cout << "x: " << point32.x << " y: " << point32.y << " Yaw: " << 180/CV_PI*std::atan2(point32.y, point32.x) << std::endl;
         return point32;
     }
 
-    //Converts a vector of CV-points (cv::Point) in ROS-points (geometry_msgs::Point32)
+    //Converts a vector of CV-points (cv::Point2f) in ROS-points (geometry_msgs::Point32)
     inline void cvtCvPoints2ROSPoints(const std::vector<cv::Point2f>& input, std::vector<geometry_msgs::Point32>& output) {
       output.clear();
       for(cv::Point2f p : input) {
