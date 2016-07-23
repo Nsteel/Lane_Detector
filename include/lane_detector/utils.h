@@ -353,11 +353,18 @@ namespace lane_detector{
     inline void ipmPoints2World(const std::vector<cv::Point2f>& input, std::vector<cv::Point2f>& output, const LaneDetector::IPMInfo& ipmInfo) {
       std::vector<cv::Point2f> out;
       for(cv::Point2f p : input) {
-        CvPoint2D32f p_copy = p;
-        LaneDetector::mcvPointImIPM2World(&p_copy, &ipmInfo);
-        p_copy.x  /= 1000; //convert to meters
-        p_copy.y  /= 1000;
-        out.push_back(p_copy);
+        CvPoint2D32f p_world = p;
+
+        //x-direction
+        p_world.x /= ipmInfo.xScale;
+        p_world.x += ipmInfo.xLimits[0];
+        //y-direction
+        p_world.y /= ipmInfo.yScale;
+        p_world.y = ipmInfo.yLimits[1] - p_world.y;
+
+        p_world.x  /= 1000; //convert to meters
+        p_world.y  /= 1000;
+        out.push_back(p_world);
       }
       output = out;
     }
@@ -370,7 +377,6 @@ namespace lane_detector{
         point32.y = -point.x;
         point32.z = 0;
 
-        std::cout << "x: " << point32.x << " y: " << point32.y << " Yaw: " << 180/CV_PI*std::atan2(point32.y, point32.x) << std::endl;
         return point32;
     }
 
