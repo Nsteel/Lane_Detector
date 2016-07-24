@@ -12,6 +12,11 @@ void FittingApproach::fitting(cv::Mat& mat, cv::Rect& box, std::vector<cv::Point
 
         box.y = 0;
         box.height = mat.rows-1;
+        //TODO Link parameter min_spline_ransac_window_width from ROS-Config
+        if(box.width < 16) {
+          box -= cv::Point(8,0);
+          box += cv::Size(16, 0);
+        }
         cv::Rect ransac_box = box;
         //Resize the box for ransac, in order to avoid noise.
         ransac_box += cv::Point(0, 25);
@@ -21,6 +26,7 @@ void FittingApproach::fitting(cv::Mat& mat, cv::Rect& box, std::vector<cv::Point
         lane_detector::utils::setMat(roi, box);
         lane_detector::utils::setMat(ransac_window, ransac_box);
         box = ransac_box;
+        //std::cout << "ransac_window_width: " << ransac_box.width << std::endl;
         //std::cout << "8" << std::endl;
         std::vector<TPoint2D> points;
 

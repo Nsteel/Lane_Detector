@@ -4,32 +4,41 @@
 #include <vector>
 
 
-float Fitting::calcCost(std::vector<cv::Point2f>& combination) {
+float Fitting::calcCost(SplineCombination& combination) {
 
-  std::array<float, 4> diff;
+  float desired_width = config.width_between_lines * ipmInfo.xScale;
+  float width_diff = (desired_width - combination.lane_width);
+  uint32_t width_weight = config.lane_width_weight;
+  if(std::abs(width_diff) > config.width_between_lines_threshold) combination.correct = false;
 
-  if(driving_orientation == lane_detector::on_the_left)  //Driving on the left
-  {
-    diff[0] = combination[0].x;
-    diff[1] = combination[1].x;
+  std::array<float, 3> diff;
+  if(combination.correct) {
+    if(driving_orientation == lane_detector::on_the_left)  //Driving on the left
+    {
+      diff[0] = combination.centroid_spline1.x;
+      diff[1] = combination.centroid_spline2.x;
+    }
+    else //Driving on the right
+    {
+      diff[0] = combination.centroid_spline1.x - (config.ipmWidth - 1);
+      diff[1] = combination.centroid_spline2.x - (config.ipmWidth - 1);
+    }
+    diff[2] = width_weight*(desired_width - combination.lane_width);
+    //diff[3] = diff[2];
+
+    //std::cout << 820 * ipmInfo.xScale << std::endl;
+    //std::cout << "s1_size:" << combination.spline1.size() <<  " s2_size: " << combination.spline2.size() <<" x1: " << combination.centroid_spline1.x << " x2: " << combination.centroid_spline2.x << " width: " << combination.lane_width <<" d0: "<< combination.centroid_spline1.x - (config.ipmWidth - 1) << " d1: " << combination.centroid_spline2.x - (config.ipmWidth - 1) << " d2: " << config.width_between_lines * ipmInfo.xScale - combination.lane_width << std::endl;
+
+    float dist = 0;
+    for (float i = 0; i < diff.size(); ++i)
+    {
+      dist += diff[i] * diff[i];
+    }
+    return sqrtf(dist);
   }
-  else //Driving on the right
-  {
-    diff[0] = combination[0].x - (config.ipmWidth - 1);
-    diff[1] = combination[1].x - (config.ipmWidth - 1);
+  else {
+    return 10000;
   }
-  diff[2] = config.width_between_lines * ipmInfo.xScale - std::fabs(combination[0].x - combination[1].x);
-  diff[4] = diff[2];
-
-  //std::cout << 820 * ipmInfo.xScale << std::endl;
-  //std::cout << "x1: "<< combination[0].x << " x2: " << combination[1].x << " d1: " << diff[0] << " d2: " << diff[1] << " d3: " << diff[2] << std::endl;
-
-  float dist = 0;
-  for (float i = 0; i < diff.size(); ++i)
-  {
-    dist += diff[i] * diff[i];
-  }
-  return sqrtf(dist);
 }
 
 lane_detector::Lane Fitting::fitting(cv::Mat& original, cv::Mat& preprocessed, LaneDetector::IPMInfo& ipmInfo, std::vector<LaneDetector::Box>& ipmBoxes)
@@ -43,11 +52,13 @@ lane_detector::Lane Fitting::fitting(cv::Mat& original, cv::Mat& preprocessed, L
         std::vector< std::vector<cv::Point> > splines;
         std::vector<cv::Point2f> centroids;
         std::vector<cv::Rect> rects;
-        lane_detector::Lane current_lane;
+        SplineCombination current_lane;
+        lane_detector::Lane current_lane_msg;
         lane_detector::utils::boxes2Rects(ipmBoxes, rects);
         lane_detector::utils::getRectsCentroids(rects, centroids);
         tracker.Update(centroids, rects, CTracker::RectsDist);
         rects = tracker.getLastRects();
+        //std::cout << "rects_size: " << rects.size() << std::endl;
         std::vector<CvRect> rectsAux(rects.begin(), rects.end());
         LaneDetector::mcvGroupBoundingBoxes(rectsAux, LaneDetector::LINE_VERTICAL, lanesConf.groupThreshold);
         rects = std::vector<cv::Rect>(rectsAux.begin(), rectsAux.end());
@@ -69,43 +80,36 @@ lane_detector::Lane Fitting::fitting(cv::Mat& original, cv::Mat& preprocessed, L
           splinePoints.clear();
         }
 
-        cv::Point closest(0,0);
-        cv::Point second_closest(0,0);
-        int closest_idx = 0;
-        int second_closest_idx = 0;
         //std::cout << "centroids: " << centroids.size() << std::endl;
         if(centroids.size() >= 2) {
-          std::vector<cv::Point2f> current_lane;
-          findCurrentLane(centroids, current_lane);
+          findCurrentLane(centroids, splines, current_lane, original);
           //std::cout << current_lane.size() << std::endl;
-          if(current_lane.size() == 2) {
-            std::vector<cv::Point2f>::iterator it1 = std::find(centroids.begin(), centroids.end(), current_lane[0]);
-            std::vector<cv::Point2f>::iterator it2 = std::find(centroids.begin(), centroids.end(), current_lane[1]);
-            if(it1 != centroids.end()) closest_idx = it1 - centroids.begin();
-            if(it2 != centroids.end()) second_closest_idx = it2 - centroids.begin();
-            //std::cout << "centroids: " << centroids.size() << std::endl;
-            closest = current_lane[0];
-            second_closest = current_lane[1];
-            }
           }
+          else if(last_lane.correct) current_lane = last_lane;
         //std::cout << "splines size: " << splines.size() << std::endl;
         //if(splines.size() == 3) {
           //std::cout << "1: " << splines[0].size() << " 2: " << splines[1].size() << " 3: " << splines[2].size() << std::endl;
         //}
 
-        if(closest.x != 0 && closest.y != 0 && second_closest.x != 0 && second_closest.y != 0) {
-          cv::circle(original, closest, 5, cv::Scalar(0,255,0), 2);
-          cv::circle(original, second_closest, 5, cv::Scalar(0,255,0), 2);
+        if(current_lane.correct) {
+          last_lane = current_lane;
+          //std::cout << "lane_width: " << current_lane.lane_width << std::endl;
+          cv::circle(original, current_lane.centroid_spline1, 5, cv::Scalar(0,255,0), 2);
+          cv::circle(original, current_lane.centroid_spline2, 5, cv::Scalar(0,255,0), 2);
+          if(config.draw_splines) lane_detector::utils::drawSpline(original, current_lane.spline1, 2, cv::Scalar(0, 255, 0));
+          if(config.draw_splines) lane_detector::utils::drawSpline(original, current_lane.spline2, 2, cv::Scalar(0, 255, 0));
         }
-
-        for(int i = 0; i < tracker.tracks.size(); i++) {
-          if (tracker.tracks[i]->trace.size() >= 1)
-          {
-          cv::circle(original, tracker.tracks[i]->trace.back(), 2, Colors[tracker.tracks[i]->track_id % 9], 2);
-          }
+        if(config.draw_tracked_centroids) {
+          for(int i = 0; i < tracker.tracks.size(); i++) {
+              if (tracker.tracks[i]->trace.size() >= 1)
+              {
+              cv::circle(original, tracker.tracks[i]->trace.back(), 2, Colors[tracker.tracks[i]->track_id % 9], 2);
+              }
+            }
         }
+        //std::cout << "Tracks: " << tracker.tracks.size() << std::endl;
 
-        std::vector<cv::Point> longest_spline;
+        /*std::vector<cv::Point> longest_spline;
         std::vector<cv::Point> second_longest_spline;
         std::vector<cv::Point> left_spline;
         std::vector<cv::Point> right_spline;
@@ -198,35 +202,60 @@ lane_detector::Lane Fitting::fitting(cv::Mat& original, cv::Mat& preprocessed, L
            current_lane.guide_line = guide_spline_ros;
            current_lane.right_line = right_spline_ros;
            current_lane.left_line = left_spline_ros;
-        }
+        }*/
       //cv::line(original, cv::Point(car_position.x, 0), cv::Point(car_position.x, lanesConf.ipmHeight-1), cv::Scalar(0, 255, 239), 1);
-      return current_lane;
+      return current_lane_msg;
 }
 
 // -------------------------------------------------
 // Solving assignment problem for the lane
 // ------------------------------------------------
-void Fitting::findCurrentLane(const std::vector<cv::Point2f>& centroids, std::vector<cv::Point2f>& current_lane) {
+void Fitting::findCurrentLane(const std::vector<cv::Point2f>& centroids, const std::vector<std::vector<cv::Point>>& splines, SplineCombination& current_lane, cv::Mat& image) {
 
-  std::vector<std::vector<cv::Point2f>> combinations;
+  //std::vector<std::vector<cv::Point2f>> combinations;
+  std::vector<SplineCombination> spline_combinations;
 
   assignments_t assignment;
 
-  lane_detector::utils::combineVectorInPairs(centroids, combinations);
+  //lane_detector::utils::combineVectorInPairs(centroids, combinations);
+
+  lane_detector::utils::makeSplineCombinations(centroids, splines, spline_combinations);
+
+  if(config.draw_normal_vectors) {
+    for(SplineCombination combination : spline_combinations) {
+      if(combination.correct) {
+        std::vector<cv::Point> normal = combination.normal_vector;
+        if(normal.size() > 1)cv::line(image, normal.front(), normal.back(), cv::Scalar(0,255,255));
+      }
+    }
+  }
+
+  /*if(combinations.size() > 1) {
+  for(std::vector<cv::Point2f> combination : combinations) {
+    auto it1 = std::find(centroids.begin(), centroids.end(), combination[0]);
+    auto it2 = std::find(centroids.begin(), centroids.end(), combination[1]);
+    if(it1 != centroids.end() && it2 != centroids.end()) {
+      uint32_t c1 = it1 - centroids.begin();
+      uint32_t c2 = it2 - centroids.begin();
+      SplineCombination(splines[c1], splines[c2]);
+    }
+  }
+}*/
 
   //One lanes has to be assigned
   size_t N = 1;
-  size_t M = combinations.size();
+  size_t M = spline_combinations.size();
   distMatrix_t cost(N * M);
 
   //std::cout << "Combis: " << combinations.size() << " combi: " << combinations[0].size() << std::endl;
 
-  if(combinations.size() > 1) {
+  if(spline_combinations.size() > 1) {
       for (size_t i = 0; i < N; i++)
     {
-      for (size_t j = 0; j <  combinations.size(); j++)
+      for (size_t j = 0; j <  spline_combinations.size(); j++)
       {
-        cost[i + j * N] = calcCost(combinations[j]);
+        cost[i + j * N] = calcCost(spline_combinations[j]);
+        //std::cout << "Cost: " << cost[i+j*N] << std::endl;
       }
     }
 
@@ -241,11 +270,11 @@ void Fitting::findCurrentLane(const std::vector<cv::Point2f>& centroids, std::ve
       if (assignment[i] != -1)
       {
         //std::cout << "assing: " << assignment[i] << " cost: " << cost[i + assignment[i] * N] << std::endl;
-        current_lane = combinations[assignment[i]];
+        current_lane = spline_combinations[assignment[i]];
       }
       //else std::cout << "Assign problem" << std::endl;
     }
   }
 
-  else if(combinations.size() > 0) current_lane = combinations[0];
+  else if(spline_combinations.size() > 0 && std::abs(config.width_between_lines * ipmInfo.xScale - spline_combinations[0].lane_width) < config.width_between_lines_threshold) current_lane = spline_combinations[0];
 }

@@ -15,6 +15,7 @@
 #include <vector>
 #include <stdexcept>
 #include <algorithm>
+#include <lane_detector/splineCombination.h>
 
 namespace lane_detector{
 
@@ -33,13 +34,13 @@ namespace lane_detector{
     inline float extrapolateLineY(float x, line& l) {
           float y = (l[0].y*(l[1].x-x) + l[1].y*(x-l[0].x))/(l[1].x - l[0].x);
           return y;
-    }
-    inline float calcSlopeAngle(cv::Point& pt1, cv::Point& pt2) {
-          float dY = std::abs(pt2.y - pt1.y);
-          float dX = std::abs(pt2.x - pt1.x);
-          float slope = dY/dX;
-          return 180*std::atan(slope)/CV_PI;
     }*/
+    inline float calcSlope(cv::Point& pt1, const cv::Point& pt2) {
+          float dY = pt2.y - pt1.y;
+          float dX = pt2.x - pt1.x;
+          float slope = dY/dX;
+          return slope;
+    }
 
     inline void boxes2Rects(std::vector<LaneDetector::Box>& boxes, std::vector<cv::Rect>& rects) {
       rects.clear();
@@ -58,11 +59,6 @@ namespace lane_detector{
         centroids.push_back(centroid);
       }
     }
-
-    template<typename T, typename... Args>
-    std::unique_ptr<T> make_unique(Args&&... args) {
-    return std::unique_ptr<T>(new T(std::forward<Args>(args)...));
-}
 
     inline bool sortPointsY (const cv::Point& p1, const cv::Point& p2) { return (p1.y > p2.y); }
 
@@ -344,6 +340,21 @@ namespace lane_detector{
            for(uint32_t j = i+1; j < input.size(); j++) {
              std::vector<T> combination {input[i], input[j]};
              output.push_back(combination);
+           }
+         }
+       }
+     }
+
+     inline void makeSplineCombinations(const std::vector<cv::Point2f>& centroids, const std::vector<std::vector<cv::Point>>& splines, std::vector<SplineCombination>& combinations) {
+       combinations.clear();
+       assert(centroids.size() == splines.size());
+       if(centroids.size() > 1) {
+         for(uint32_t i = 0; i < centroids.size()-1; i++) {
+           for(uint32_t j = i+1; j < centroids.size(); j++) {
+             if(splines[i].size() > 3 && splines[j].size() > 3) {
+               SplineCombination combination(splines[i], splines[j], i, j, centroids[i], centroids[j]);
+               combinations.push_back(combination);
+            }
            }
          }
        }
