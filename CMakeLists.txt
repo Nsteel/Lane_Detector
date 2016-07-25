@@ -12,11 +12,11 @@ find_package(catkin REQUIRED COMPONENTS
   std_msgs
   geometry_msgs
   dynamic_reconfigure
+  message_generation
 )
 find_package(OpenCV 2 REQUIRED)
 find_package(OpenMP REQUIRED)
 find_package(MRPT REQUIRED)
-find_package(message_generation)
 
 ## System dependencies are found with CMake's conventions
 # find_package(Boost REQUIRED COMPONENTS system)
@@ -138,20 +138,27 @@ add_executable(camera_simulator src/camera_simulator.cpp)
 ## as an example, code may need to be generated before libraries
 ## either from message generation or dynamic reconfigure
 add_dependencies(lane_detector ${PROJECT_NAME}_gencfg)
+add_dependencies(FITTING ${PROJECT_NAME}_gencfg)
+add_dependencies(EXTRACTOR ${PROJECT_NAME}_gencfg)
+add_dependencies(PREPROCESSOR ${PROJECT_NAME}_gencfg)
+add_dependencies(lane_detector ${PROJECT_NAME}_gencpp)
+add_dependencies(FITTING ${PROJECT_NAME}_gencpp)
+add_dependencies(EXTRACTOR ${PROJECT_NAME}_gencpp)
+add_dependencies(PREPROCESSOR ${PROJECT_NAME}_gencpp)
 
 ## Add cmake target dependencies of the executable
 ## same as for the library above
-# add_dependencies(lane_detector_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
+add_dependencies(lane_detector ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 ## Specify libraries to link a library or executable target against
-find_library(laneDetector_LIBRARIES LaneDetector /home/n/catkin_ws/src/lane_detector/lib/)
+find_library(laneDetector_LIBRARIES LaneDetector lib/)
 
 target_link_libraries(PREPROCESSOR ${OpenCV_LIBRARIES})
 target_link_libraries(EXTRACTOR ${OpenCV_LIBRARIES})
 target_link_libraries(FITTING_APPROACH ${OpenCV_LIBRARIES} ${MRPT_LIBS})
 target_link_libraries(KALMAN_FILTER ${OpenCV_LIBRARIES})
 target_link_libraries(TRACKER ${OpenCV_LIBRARIES} KALMAN_FILTER HUNGARIAN_ALG)
-target_link_libraries(FITTING ${OpenCV_LIBRARIES} FITTING_APPROACH TRACKER)
+target_link_libraries(FITTING ${catkin_LIBRARIES} ${OpenCV_LIBRARIES} FITTING_APPROACH TRACKER)
 target_link_libraries(lane_detector ${catkin_LIBRARIES} PREPROCESSOR FITTING EXTRACTOR)
 target_link_libraries(lane_detector ${OpenCV_LIBRARIES} ${laneDetector_LIBRARIES})
 target_link_libraries(camera_simulator ${OpenCV_LIBRARIES} ${catkin_LIBRARIES})
@@ -190,6 +197,10 @@ target_link_libraries(camera_simulator ${OpenCV_LIBRARIES} ${catkin_LIBRARIES})
 #   # myfile2
 #   DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
 # )
+
+#Disabling deprecating warnings
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-write-strings")
+#set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wno-deprecated")
 
 #############
 ## Enabling C++11##
