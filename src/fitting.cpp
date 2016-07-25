@@ -19,7 +19,7 @@ float Fitting::calcCost(std::vector<cv::Point2f>& combination) {
     diff[1] = combination[1].x - (config.ipmWidth - 1);
   }
   diff[2] = config.width_between_lines * ipmInfo.xScale - std::fabs(combination[0].x - combination[1].x);
-  diff[4] = diff[2];
+  diff[3] = diff[2];
 
   //std::cout << 820 * ipmInfo.xScale << std::endl;
   //std::cout << "x1: "<< combination[0].x << " x2: " << combination[1].x << " d1: " << diff[0] << " d2: " << diff[1] << " d3: " << diff[2] << std::endl;
