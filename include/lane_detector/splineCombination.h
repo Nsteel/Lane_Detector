@@ -43,61 +43,29 @@ public:
 private:
         inline void calcLaneWidth() {
 
-          std::vector<cv::Point> right_spline;
-          std::vector<cv::Point> left_spline;
-
           assert(spline1.size() > 3);
           assert(spline2.size() > 3);
 
-          if(spline1[0].x > spline2[0].x)
-          {
-            right_spline = spline1;
-            left_spline = spline2;
-          }
-          else
-          {
-            right_spline = spline2;
-            left_spline = spline1;
-          }
+          std::vector<cv::Point> closest_spline;
+          std::vector<cv::Point> second_closest_spline;
 
-          int min_s1 = 9999;
-          int max_s1 = -1;
-          for(cv::Point p : spline1) {
-            if(p.x > max_s1) max_s1 = p.x;
-            if(p.x < min_s1) min_s1 = p.x;
+          if(spline1[0].y > spline2[0].y)  {
+            closest_spline = spline1;
+            second_closest_spline = spline2;
+          }
+          else {
+            closest_spline = spline2;
+            second_closest_spline = spline1;
           }
 
-          int min_s2 = 9999;
-          int max_s2 = -1;
-          for(cv::Point p : spline2) {
-            if(p.x > max_s2) max_s2 = p.x;
-            if(p.x < min_s2) min_s2 = p.x;
-          }
-
-          int min_x = std::min(min_s1, min_s2);
-          int max_x = std::max(max_s1, max_s2);
-
-          bool found = false;
-          for(int i = 0; i < left_spline.size()-1; i++) {
-            cv::Point p1 = left_spline[i];
-            cv::Point p2 = left_spline[i+1];
-            float tangent_slope = calcSlope(p1, p2);
-            for(int j = max_x; j >= min_x; j--) {
-              int normal_y = cvRound(p1.y - (j - p1.x)/tangent_slope);
-              cv::Point normal_point(j, normal_y);
-              auto iterator = std::find(right_spline.begin(), right_spline.end(), normal_point);
-              if(iterator != right_spline.end()) {
-                normal_vector.push_back(p1);
-                normal_vector.push_back(normal_point);
-                lane_width = cv::norm(p1 - normal_point);
-                //std::cout << "Got it!" << normal_point.x << ", " << normal_point.y << std::endl;
-                break;
-              }
+          for(int i = 0; i < closest_spline.size(); i++) {
+            if(closest_spline[i].y <= second_closest_spline[0].y) {
+              lane_width = std::abs(cvRound((closest_spline[i].x - second_closest_spline[0].x)));
+              //std::cout << "Middle: " << middle << std::endl;
+              break;
             }
-            if(found) break;
-            else correct = false;
-            //else std::cout << "Not to get it" << std::endl;
           }
+
           if(lane_width == 0) correct = false;
         };
 };

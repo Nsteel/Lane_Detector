@@ -109,70 +109,42 @@ lane_detector::Lane Fitting::fitting(cv::Mat& original, cv::Mat& preprocessed, L
         }
         //std::cout << "Tracks: " << tracker.tracks.size() << std::endl;
 
-        /*std::vector<cv::Point> longest_spline;
-        std::vector<cv::Point> second_longest_spline;
+        std::vector<cv::Point> longest_spline;
         std::vector<cv::Point> left_spline;
         std::vector<cv::Point> right_spline;
         std::vector<cv::Point> guide_spline;
-        uint32_t longest_spline_idx = 0;
-        uint32_t second_longest_spline_idx = 0;
 
-        //std::cout << "splines: " << splines.size() << std::endl;
-        //if(splines.size() > 1) std::cout << "closest: " << splines[closest_idx].size() << " second: " << splines[second_closest_idx].size() << std::endl;
+        if(current_lane.correct) {
 
-        if(splines.size() > 1 && splines[closest_idx].size() > 3 && splines[second_closest_idx].size() > 3) {
-          if(splines[closest_idx][0].y > splines[second_closest_idx][0].y)  {
-            longest_spline = splines[closest_idx];
-            second_longest_spline = splines[second_closest_idx];
-            longest_spline_idx = closest_idx;
-            second_longest_spline_idx = second_closest_idx;
+          uint32_t length_spline1 = current_lane.spline1.front().y - current_lane.spline1.back().y;
+          uint32_t length_spline2 = current_lane.spline2.front().y - current_lane.spline2.back().y;
+          //std::cout << "length spline1: " << length_spline1 << "length spline2: " << length_spline2 << std::endl;
+          if(length_spline1 > length_spline2) {
+              longest_spline = current_lane.spline1;
           }
           else {
-            longest_spline = splines[second_closest_idx];
-            second_longest_spline = splines[closest_idx];
-            longest_spline_idx = second_closest_idx;
-            second_longest_spline_idx = closest_idx;
+            longest_spline = current_lane.spline2;
           }
 
-          int middle = 0;
+          if(current_lane.spline1[0].x > current_lane.spline2[0].x) {
+            right_spline = current_lane.spline1;
+            left_spline = current_lane.spline2;
+          }
+          else {
+            right_spline = current_lane.spline2;
+            left_spline = current_lane.spline1;
+          }
+
           for(int i = 0; i < longest_spline.size(); i++) {
-            if(longest_spline[i].y <= second_longest_spline[0].y) {
-              middle = std::abs(cvRound((longest_spline[i].x - second_longest_spline[0].x)/2));
-
-              //std::cout << "Middle: " << middle << std::endl;
-              break;
+            if(longest_spline == left_spline) {
+              cv::Point p = longest_spline[i];
+              p.x += current_lane.lane_width/2;
+              guide_spline.push_back(p);
             }
-          }
-
-          uint32_t height_spline1 = longest_spline.front().y - longest_spline.back().y;
-          uint32_t height_spline2 = second_longest_spline.front().y - second_longest_spline.back().y;
-          //std::cout << "height spline1: " << height_spline1 << "height spline2: " << height_spline2 << std::endl;
-          if(height_spline1 < height_spline2) {
-              std::vector<cv::Point> aux = longest_spline;
-              uint32_t idx = longest_spline_idx;
-              longest_spline = second_longest_spline;
-              second_longest_spline = aux;
-              longest_spline_idx = second_longest_spline_idx;
-              second_longest_spline_idx = idx;
-          }
-
-          guide_spline = longest_spline;
-
-          if(centroids[longest_spline_idx].x > centroids[second_longest_spline_idx].x) {
-              right_spline = splines[longest_spline_idx];
-              left_spline = splines[second_longest_spline_idx];
-
-              for(int i = 0; i < guide_spline.size(); i++) {
-                guide_spline[i].x -= middle;
-              }
-          }
-
-          else {
-            right_spline = splines[second_longest_spline_idx];
-            left_spline = splines[longest_spline_idx];
-
-            for(int i = 0; i < guide_spline.size(); i++) {
-              guide_spline[i].x += middle;
+            else { //longest_spline == right_spline
+              cv::Point p = longest_spline[i];
+              p.x -= current_lane.lane_width/2;
+              guide_spline.push_back(p);
             }
           }
 
@@ -199,10 +171,10 @@ lane_detector::Lane Fitting::fitting(cv::Mat& original, cv::Mat& preprocessed, L
            lane_detector::utils::cvtCvPoints2ROSPoints(right_spline_float, right_spline_ros);
            lane_detector::utils::cvtCvPoints2ROSPoints(left_spline_float, left_spline_ros);
 
-           current_lane.guide_line = guide_spline_ros;
-           current_lane.right_line = right_spline_ros;
-           current_lane.left_line = left_spline_ros;
-        }*/
+           current_lane_msg.guide_line = guide_spline_ros;
+           current_lane_msg.right_line = right_spline_ros;
+           current_lane_msg.left_line = left_spline_ros;
+        }
       //cv::line(original, cv::Point(car_position.x, 0), cv::Point(car_position.x, lanesConf.ipmHeight-1), cv::Scalar(0, 255, 239), 1);
       return current_lane_msg;
 }
