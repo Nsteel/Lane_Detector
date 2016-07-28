@@ -130,7 +130,7 @@ void readImg(const sensor_msgs::ImageConstPtr& img)
 int main(int argc, char **argv){
 
         //processImage(cameraInfo, lanesConf);
-        mcvInitCameraInfo("/home/n/lane-detector/src/CameraInfo.conf", &cameraInfo);
+        mcvInitCameraInfo("/home/pses/catkin_ws/src/lane_detector/config/CameraInfo.conf", &cameraInfo);
         preproc.setCameraInfo(cameraInfo);
         ros::init(argc, argv, "lane_detector");
 
