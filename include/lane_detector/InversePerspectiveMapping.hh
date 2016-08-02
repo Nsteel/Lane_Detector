@@ -8,12 +8,10 @@
 #define INVERSEPERSPECTIVEMAPPING_HH_
 
 
-#include "cv.h"
-#include "mcv.hh"
+#include <cv.h>
+#include <lane_detector/mcv.hh>
 #include <list>
 
-//conf file for cameraInfo
-#include "CameraInfoOpt.h"
 
 using namespace std;
 
@@ -138,14 +136,6 @@ FLOAT_POINT2D mcvGetVanishingPoint(const CameraInfo *cameraInfo);
  */
 void mcvPointImIPM2World(FLOAT_POINT2D *point, const IPMInfo *ipmInfo);
 
-/**
- * Initializes the cameraInfo structure with data read from the conf file
- *
- * \param fileName the input camera conf file name
- * \param cameraInfo the returned camera parametrs struct
- *
- */
-void mcvInitCameraInfo (char *const fileName, CameraInfo *cameraInfo);
 
 /**
  * Scales the cameraInfo according to the input image size
