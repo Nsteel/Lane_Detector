@@ -11,10 +11,8 @@
 #include <lane_detector/DetectorConfig.h>
 #include <cv.h>
 #include <lane_detector/LaneDetector.hh>
-#include <lane_detector/LaneDetectorOpt.h>
 #include <lane_detector/utils.h>
 #include <lane_detector/InversePerspectiveMapping.hh>
-#include <lane_detector/CameraInfoOpt.h>
 
 class Preprocessor {
 public:

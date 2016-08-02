@@ -13,6 +13,7 @@ void Preprocessor::preprocess(cv::Mat& img, LaneDetector::IPMInfo& ipmInfo_) {
         LaneDetector::mcvGet2DerivativeGaussianKernel(fx, (lanesConf.kernelWidth-1)/2, lanesConf.lineWidth*ipmInfo.xScale);
         //LaneDetector::SHOW_MAT(fx, "Kernel_x:");
         //LaneDetector::SHOW_MAT(fy, "Kernel_y:");
+        //TODO rewrite function
         LaneDetector::mcvLoadImage(&raw_ptr, &mat_ptr);
         //subtract mean
         CvScalar mean = cvAvg(mat_ptr);
