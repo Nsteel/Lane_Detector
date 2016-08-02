@@ -13,10 +13,13 @@ find_package(catkin REQUIRED COMPONENTS
   geometry_msgs
   dynamic_reconfigure
   message_generation
+  roslint
 )
 find_package(OpenCV 2 REQUIRED)
 find_package(OpenMP REQUIRED)
 find_package(MRPT REQUIRED)
+
+roslint_cpp()
 
 ## System dependencies are found with CMake's conventions
 # find_package(Boost REQUIRED COMPONENTS system)
@@ -122,6 +125,9 @@ include_directories(include
 )
 
 ## Declare a C++ library
+add_library(LaneDetector src/LaneDetector.cc)
+add_library(MCV src/mcv.cc)
+add_library(InversePerspectiveMapping src/InversePerspectiveMapping.cc)
 add_library(PREPROCESSOR src/preprocessor.cpp)
 add_library(EXTRACTOR src/featureExtractor.cpp)
 add_library(FITTING src/fitting.cpp)
@@ -151,16 +157,18 @@ add_dependencies(PREPROCESSOR ${PROJECT_NAME}_gencpp)
 add_dependencies(lane_detector ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 ## Specify libraries to link a library or executable target against
-find_library(laneDetector_LIBRARIES LaneDetector lib/)
 
-target_link_libraries(PREPROCESSOR ${OpenCV_LIBRARIES})
-target_link_libraries(EXTRACTOR ${OpenCV_LIBRARIES})
+target_link_libraries(MCV ${OpenCV_LIBRARIES})
+target_link_libraries(InversePerspectiveMapping ${OpenCV_LIBRARIES} MCV)
+target_link_libraries(LaneDetector ${OpenCV_LIBRARIES} MCV InversePerspectiveMapping)
+target_link_libraries(PREPROCESSOR ${OpenCV_LIBRARIES} LaneDetector)
+target_link_libraries(EXTRACTOR ${OpenCV_LIBRARIES} LaneDetector)
 target_link_libraries(FITTING_APPROACH ${OpenCV_LIBRARIES} ${MRPT_LIBS})
 target_link_libraries(KALMAN_FILTER ${OpenCV_LIBRARIES})
 target_link_libraries(TRACKER ${OpenCV_LIBRARIES} KALMAN_FILTER HUNGARIAN_ALG)
-target_link_libraries(FITTING ${catkin_LIBRARIES} ${OpenCV_LIBRARIES} FITTING_APPROACH TRACKER)
+target_link_libraries(FITTING ${catkin_LIBRARIES} ${OpenCV_LIBRARIES} FITTING_APPROACH TRACKER LaneDetector)
 target_link_libraries(lane_detector ${catkin_LIBRARIES} PREPROCESSOR FITTING EXTRACTOR)
-target_link_libraries(lane_detector ${OpenCV_LIBRARIES} ${laneDetector_LIBRARIES})
+target_link_libraries(lane_detector ${OpenCV_LIBRARIES} LaneDetector)
 target_link_libraries(camera_simulator ${OpenCV_LIBRARIES} ${catkin_LIBRARIES})
 
 #############
