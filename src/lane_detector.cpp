@@ -11,6 +11,7 @@
 #include <image_transport/image_transport.h>
 #include <cv_bridge/cv_bridge.h>
 #include <sensor_msgs/image_encodings.h>
+#include <sensor_msgs/CameraInfo.h>
 #include <opencv2/imgproc/imgproc.hpp>
 #include <opencv2/highgui/highgui.hpp>
 #include <iostream>
@@ -24,8 +25,6 @@
 #include <geometry_msgs/PointStamped.h>
 #include <geometry_msgs/PolygonStamped.h>
 #include <lane_detector/LaneDetector.hh>
-#include <lane_detector/CameraInfoOpt.h>
-#include <lane_detector/LaneDetectorOpt.h>
 #include <lane_detector/mcv.hh>
 #include <lane_detector/utils.h>
 
@@ -39,6 +38,20 @@ lane_detector::DetectorConfig dynConfig;
 LaneDetector::CameraInfo cameraInfo;
 LaneDetector::LaneDetectorConf lanesConf;
 
+
+void readCameraInfo(const sensor_msgs::CameraInfo::ConstPtr& cm, bool* done) {
+
+  cameraInfo.focalLength.x = cm->P[0];
+  cameraInfo.focalLength.y = cm->P[5];
+  cameraInfo.opticalCenter.x = cm->P[2];
+  cameraInfo.opticalCenter.y = cm->P[6];
+  cameraInfo.imageWidth = cm->width;
+  cameraInfo.imageHeight = cm->height;
+  cameraInfo.cameraHeight = dynConfig.camera_height;
+  cameraInfo.pitch = dynConfig.camera_pitch * CV_PI/180;
+  cameraInfo.yaw = 0.0;
+  *done = true;
+}
 
 void configCallback(lane_detector::DetectorConfig& config, uint32_t level)
 {
@@ -129,9 +142,6 @@ void readImg(const sensor_msgs::ImageConstPtr& img)
 
 int main(int argc, char **argv){
 
-        //processImage(cameraInfo, lanesConf);
-        mcvInitCameraInfo("/home/n/catkin_ws/src/lane_detector/config/CameraInfo.conf", &cameraInfo);
-        preproc.setCameraInfo(cameraInfo);
         ros::init(argc, argv, "lane_detector");
 
         /**
@@ -147,6 +157,22 @@ int main(int argc, char **argv){
 
         f = boost::bind(&configCallback, _1, _2);
         server.setCallback(f);
+
+        bool info_set = false;
+
+        //Read camera information
+        ros::Subscriber cameraInfo_sub = nh.subscribe<sensor_msgs::CameraInfo>("camera_info", 1, std::bind(readCameraInfo, std::placeholders::_1, &info_set));
+
+        while (!info_set) {
+          ros::spinOnce();
+          ROS_ERROR("No information on topic camera_info received");
+        }
+
+        //Stop the Subscriber
+        cameraInfo_sub.shutdown();
+
+        //Set cameraInfo
+        preproc.setCameraInfo(cameraInfo);
 
         /**
          * The advertise() function is how you tell ROS that you want to
