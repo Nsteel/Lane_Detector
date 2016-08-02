@@ -21,9 +21,9 @@ void FeatureExtractor::extract(cv::Mat& original, cv::Mat& preprocessed, std::ve
         mcvGetLinesBoundingBoxesVec(lanes, LaneDetector::LINE_VERTICAL, cvSize(preprocessed.cols-1, preprocessed.rows-1), boxes);
         mcvGroupBoundingBoxesVec(boxes, LaneDetector::LINE_VERTICAL, lanesConf.overlapThreshold);
         ROS_DEBUG("Bounding boxes count:%lu", boxes.size());
-        if(boxes.size() > 3) {
+        if(boxes.size() > config.max_num_lanes) {
           std::sort(boxes.begin(), boxes.end(), lane_detector::utils::compareBoxes);
-          auto last_box = boxes.begin() + 3;
+          auto last_box = boxes.begin() + config.max_num_lanes;
           boxes = std::vector<LaneDetector::Box>(boxes.begin(), last_box);
         }
 
