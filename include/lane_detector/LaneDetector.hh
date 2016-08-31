@@ -108,59 +108,7 @@ typedef struct LaneDetectorConf
 
   ///Overlap threshold to use for grouping of bounding boxes
   float overlapThreshold;
-
-  ///Angle threshold used for localization (cosine, 1: most restrictive,
-  /// 0: most liberal)
-  float localizeAngleThreshold;
-  ///Number of pixels to go in normal direction for localization
-  int localizeNumLinePixels;
-
-  ///Angle threshold used for extending (cosine, 1: most restrictive,
-  /// 0: most liberal)
-  float extendAngleThreshold;
-  ///Angle threshold from mean direction used for extending (cosine, 1:
-  /// most restrictive, 0: most liberal)
-  float extendMeanDirAngleThreshold;
-  ///Number of pixels to go in tangent direction for extending
-  int extendLinePixelsTangent;
-  ///Number of pixels to go in normal direction for extending
-  int extendLinePixelsNormal;
-  ///Trehsold used for stopping the extending process (higher ->
-  /// less extending)
-  float extendContThreshold;
-  ///Stop extending when number of deviating points exceeds this threshold
-  int extendDeviationThreshold;
-  ///Top point for extension bounding box
-  int extendRectTop;
-  ///	Bottom point for extension bounding box
-  int extendRectBottom;
-
-  ///Angle threshold used for extending (cosine, 1: most restrictive,
-  /// 0: most liberal)
-  float extendIPMAngleThreshold;
-  ///Angle threshold from mean direction used for extending (cosine,
-  /// 1: most restrictive, 0: most liberal)
-  float extendIPMMeanDirAngleThreshold;
-  ///Number of pixels to go in tangent direction for extending
-  int extendIPMLinePixelsTangent;
-  ///Number of pixels to go in normal direction for extending
-  int extendIPMLinePixelsNormal;
-  ///Trehsold used for stopping the extending process (higher ->
-  /// less extending)
-  float extendIPMContThreshold;
-  ///Stop extending when number of deviating points exceeds this threshold
-  int extendIPMDeviationThreshold;
-  ///Top point for extension bounding box
-  int extendIPMRectTop;
-  ///	Bottom point for extension bounding box
-  int extendIPMRectBottom;
-
-  ///Number of horizontal strips to divide the image to
-  int numStrips;
-
-  ///Use ground plane when sending to map or not
-  bool useGroundPlane;
-
+  
   ///Whether to clear part of the IPM image
   bool ipmWindowClear;
   ///Left corrdinate of window to keep in IPM
@@ -197,7 +145,7 @@ void mcvIntersectLineRThetaWithBB(FLOAT r, FLOAT theta, const CvSize bbox, Line 
 void mcvIntersectLineWithBB(const Line *inLine, const CvSize bbox, Line *outLine);
 bool mcvIsPointInside(FLOAT_POINT2D point, CvSize bbox);
 void mcvLineXY2RTheta(const Line &line, float &r, float &theta);
-void mcvPreprocess(CvMat **inImage, CameraInfo *cameraInfo, IPMInfo* ipmInfo, LaneDetectorConf *lanesConf);
+void getIPM(CvMat **inImage, CameraInfo *cameraInfo, IPMInfo* ipmInfo, LaneDetectorConf *lanesConf, list<CvPoint>* outPixels);
 void mcvSampleWeighted(const CvMat *cumSum, int numSamples, CvMat *randInd, CvRNG *rng);
 void  mcvSetMat(CvMat *inMat, CvRect mask, double val);
 void mcvThresholdLower(const CvMat *inMat, CvMat *outMat, FLOAT threshold);

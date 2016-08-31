@@ -25,7 +25,7 @@ public:
                 this->config = config;
                 lane_detector::utils::translateConfiguration(config, this->lanesConf);
         };
-        void preprocess(cv::Mat& img, LaneDetector::IPMInfo& ipmInfo);
+        void preprocess(cv::Mat& originalImg, cv::Mat& img, LaneDetector::IPMInfo& ipmInfo, LaneDetector::CameraInfo& cameraInfo_);
 private:
         lane_detector::DetectorConfig config;
         LaneDetector::LaneDetectorConf lanesConf;

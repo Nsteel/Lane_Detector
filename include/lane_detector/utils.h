@@ -179,31 +179,6 @@ namespace lane_detector{
 
     lanesConf.overlapThreshold = dynConfig.overlapThreshold;
 
-    lanesConf.localizeAngleThreshold = dynConfig.localizeAngleThreshold;
-    lanesConf.localizeNumLinePixels = dynConfig.localizeNumLinePixels;
-
-    lanesConf.extendAngleThreshold = dynConfig.extendAngleThreshold;
-    lanesConf.extendMeanDirAngleThreshold = dynConfig.extendMeanDirAngleThreshold;
-    lanesConf.extendLinePixelsTangent = dynConfig.extendLinePixelsTangent;
-    lanesConf.extendLinePixelsNormal = dynConfig.extendLinePixelsNormal;
-    lanesConf.extendContThreshold = dynConfig.extendContThreshold;
-    lanesConf.extendDeviationThreshold = dynConfig.extendDeviationThreshold;
-    lanesConf.extendRectTop = dynConfig.extendRectTop;
-    lanesConf.extendRectBottom = dynConfig.extendRectBottom;
-
-    lanesConf.extendIPMAngleThreshold = dynConfig.extendIPMAngleThreshold;
-    lanesConf.extendIPMMeanDirAngleThreshold = dynConfig.extendIPMMeanDirAngleThreshold;
-    lanesConf.extendIPMLinePixelsTangent = dynConfig.extendIPMLinePixelsTangent;
-    lanesConf.extendIPMLinePixelsNormal = dynConfig.extendIPMLinePixelsNormal;
-    lanesConf.extendIPMContThreshold = dynConfig.extendIPMContThreshold;
-    lanesConf.extendIPMDeviationThreshold = dynConfig.extendIPMDeviationThreshold;
-    lanesConf.extendIPMRectTop = dynConfig.extendIPMRectTop;
-    lanesConf.extendIPMRectBottom = dynConfig.extendIPMRectBottom;
-
-    lanesConf.numStrips = dynConfig.numStrips;
-
-    lanesConf.useGroundPlane = dynConfig.useGroundPlane;
-
     lanesConf.ipmWindowClear = dynConfig.ipmWindowClear;
     lanesConf.ipmWindowLeft = dynConfig.ipmWindowLeft;
     lanesConf.ipmWindowRight = dynConfig.ipmWindowRight;
@@ -255,6 +230,51 @@ namespace lane_detector{
        inImage.convertTo(inImage, CV_32FC1);
        cv::minMaxIdx(inImage, 0, &max);
        inImage = inImage * 1/max;
+     }
+
+     inline void spline2Mat(std::vector<cv::Point2f>& spline, cv::Mat& out) {
+       for(int j = 0; j < spline.size(); j++) {
+         out.at<float>(0,j) = spline[j].x;
+         out.at<float>(1,j) = spline[j].y;
+       }
+     }
+
+     inline void transformGround2Image(cv::Mat& points, LaneDetector::CameraInfo& cameraInfo) {
+
+       //points = points * 1000.0;
+
+       //create the transformation matrix
+       float c1 = cos(cameraInfo.pitch);
+       float s1 = sin(cameraInfo.pitch);
+       float c2 = cos(cameraInfo.yaw);
+       float s2 = sin(cameraInfo.yaw);
+       float matp[] = {
+         cameraInfo.focalLength.x * c2 + c1*s2* cameraInfo.opticalCenter.x,
+         -cameraInfo.focalLength.x * s2 + c1*c2* cameraInfo.opticalCenter.x,
+         - s1 * cameraInfo.opticalCenter.x,
+
+         s2 * (-cameraInfo.focalLength.y * s1 + c1* cameraInfo.opticalCenter.y),
+         c2 * (-cameraInfo.focalLength.y * s1 + c1* cameraInfo.opticalCenter.y),
+         -cameraInfo.focalLength.y * c1 - s1* cameraInfo.opticalCenter.y,
+
+         c1*s2,
+         c1*c2,
+         -s1
+       };
+       cv::Mat transform(3, 3, CV_32FC1, matp);
+       cv::Mat extra_row(1, points.cols, CV_32FC1, cv::Scalar(-cameraInfo.cameraHeight));
+       points.push_back(extra_row);
+       points = transform * points;
+       float div = cameraInfo.cameraHeight;
+       points =  points / div;
+       points.pop_back();
+     }
+
+     inline void mat2Spline(cv::Mat& in, std::vector<cv::Point2f>& spline) {
+       for(int j = 0; j < in.cols; j++) {
+         spline[j].x = in.at<float>(0,j);
+         spline[j].y = in.at<float>(1,j);
+       }
      }
 
      template<class T>
@@ -335,6 +355,17 @@ namespace lane_detector{
       return output;
     }
 
+    //Converts a vector of CV-points (cv::Point2f) in CV points (cv::Point)
+    inline std::vector<cv::Point> cvtCvPoint2f2CvPoint(const std::vector<cv::Point2f>& input) {
+      std::vector<cv::Point> output;
+      for(cv::Point2f p_float : input) {
+        cv::Point p;
+        p.x = cvRound(p_float.x);
+        p.y = cvRound(p_float.y);
+        if(p.x > 0) output.push_back(p);
+      }
+      return output;
+    }
   }
 };
 

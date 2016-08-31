@@ -75,20 +75,23 @@ void processImage(LaneDetector::CameraInfo& cameraInfo, LaneDetector::LaneDetect
   if(currentFrame_ptr) {
 
     //information paramameters of the IPM transform
-    LaneDetector::IPMInfo ipminfo;
+    LaneDetector::IPMInfo ipmInfo;
+    LaneDetector::CameraInfo cameraInfo;
     // detect bounding boxes arround the lanes
     std::vector<LaneDetector::Box> boxes;
-    cv::Mat originalImg = currentFrame_ptr->image;
-    preproc.preprocess(originalImg, ipminfo);
-    cv::Mat preprocessed = originalImg.clone();
-    lane_detector::utils::scaleMat(originalImg, originalImg);
-    if(originalImg.channels() == 1) cv::cvtColor(originalImg, originalImg, CV_GRAY2BGR);
-    extractor.extract(originalImg, preprocessed, boxes);
-    lane_detector::Lane current_lane = fitting_phase.fitting(originalImg, preprocessed, ipminfo, boxes);
+    cv::Mat processed_bgr = currentFrame_ptr->image;
+    preproc.preprocess(currentFrame_ptr->image, processed_bgr, ipmInfo, cameraInfo);
+    cv::Mat preprocessed = processed_bgr.clone();
+    lane_detector::utils::scaleMat(processed_bgr, processed_bgr);
+    if(processed_bgr.channels() == 1) cv::cvtColor(processed_bgr, processed_bgr, CV_GRAY2BGR);
+    extractor.extract(processed_bgr, preprocessed, boxes);
+    lane_detector::Lane current_lane = fitting_phase.fitting(currentFrame_ptr->image, processed_bgr, preprocessed, ipmInfo, cameraInfo, boxes);
     lane_pub.publish(current_lane);
-    cv::imshow("Out", originalImg);
+
+    cv::imshow("Out", processed_bgr);
     cv::waitKey(1);
-    cv::line(currentFrame_ptr->image, cv::Point((currentFrame_ptr->image.cols-1)/2, 0), cv::Point((currentFrame_ptr->image.cols-1)/2, currentFrame_ptr->image.rows), cv::Scalar(0, 255, 239), 1);
+
+    //cv::line(currentFrame_ptr->image, cv::Point((currentFrame_ptr->image.cols-1)/2, 0), cv::Point((currentFrame_ptr->image.cols-1)/2, currentFrame_ptr->image.rows), cv::Scalar(0, 255, 239), 1);
        // print lanes
         /*for(int i=0; i<splines.size(); i++)
          {
