@@ -1,4 +1,5 @@
 #include <lane_detector/lane_tracker/Ctracker.h>
+#include <swri_profiler/profiler.h>
 
 
 // ---------------------------------------------------------------------------
@@ -11,6 +12,7 @@ void CTracker::Update(
 	)
 {
 	assert(detections.size() == rects.size());
+	SWRI_PROFILE("Tracking");
 
 	// -----------------------------------
 	// If there is no tracks yet, then every cv::Point begins its own track.

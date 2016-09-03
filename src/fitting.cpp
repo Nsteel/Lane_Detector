@@ -2,6 +2,7 @@
 #include <opencv2/highgui/highgui.hpp>
 #include <algorithm>
 #include <vector>
+#include <swri_profiler/profiler.h>
 
 
 float Fitting::calcCost(SplineCombination& combination) {
@@ -10,7 +11,7 @@ float Fitting::calcCost(SplineCombination& combination) {
 
 lane_detector::Lane Fitting::fitting(cv::Mat& original, cv::Mat& processed_bgr, cv::Mat& preprocessed, LaneDetector::IPMInfo& ipmInfo, LaneDetector::CameraInfo& cameraInfo, std::vector<LaneDetector::Box>& ipmBoxes)
 {
-
+        SWRI_PROFILE("Fitting");
         this->ipmInfo = ipmInfo;
         this->cameraInfo = cameraInfo;
 
@@ -167,6 +168,8 @@ lane_detector::Lane Fitting::fitting(cv::Mat& original, cv::Mat& processed_bgr, 
 // Solving assignment problem for the lane
 // ------------------------------------------------
 void Fitting::findCurrentLane(const std::vector<cv::Point2f>& centroids, const std::vector<std::vector<cv::Point>>& splines, SplineCombination& current_lane, cv::Mat& image) {
+
+  SWRI_PROFILE("findCurrentLane");
 
   std::vector<SplineCombination> spline_combinations;
 

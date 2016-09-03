@@ -14,6 +14,7 @@ find_package(catkin REQUIRED COMPONENTS
   dynamic_reconfigure
   message_generation
   roslint
+  swri_profiler
 )
 find_package(OpenCV 2 REQUIRED)
 find_package(OpenMP REQUIRED)

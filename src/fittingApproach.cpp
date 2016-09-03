@@ -5,11 +5,11 @@
 #include <lane_detector/fitSpline.h>
 #include <mrpt/math/model_search.h>
 #include <mrpt/random.h>
-
+#include <swri_profiler/profiler.h>
 
 void FittingApproach::fitting(cv::Mat& mat, cv::Rect& box, std::vector<cv::Point>& splinePoints)
 {
-
+        SWRI_PROFILE("Spline-Fitting");
         box.y = 0;
         box.height = mat.rows-1;
         //TODO Link parameter min_spline_ransac_window_width from ROS-Config

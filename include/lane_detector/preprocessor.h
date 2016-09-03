@@ -16,7 +16,9 @@
 
 class Preprocessor {
 public:
-        Preprocessor(){
+        inline Preprocessor(){
+          kernel_x = (cv::Mat_<float>(5,1) << -0.252732, 0.111711, 0.427063, 0.111711, -0.252732);
+          kernel_y = (cv::Mat_<float>(5,1) << 0.999903, 0.999976, 1, 0.999976, 0.999903);
         };
         inline void setCameraInfo(LaneDetector::CameraInfo& cameraInfo) {
           this->cameraInfo = cameraInfo;
@@ -31,6 +33,8 @@ private:
         LaneDetector::LaneDetectorConf lanesConf;
         LaneDetector::CameraInfo cameraInfo;
         LaneDetector::IPMInfo ipmInfo;
+        cv::Mat kernel_x;
+        cv::Mat kernel_y;
 };
 
 #endif /* PREPROCESSOR_H */

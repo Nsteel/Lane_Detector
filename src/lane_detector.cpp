@@ -27,6 +27,7 @@
 #include <lane_detector/LaneDetector.hh>
 #include <lane_detector/mcv.hh>
 #include <lane_detector/utils.h>
+#include <swri_profiler/profiler.h>
 
 cv_bridge::CvImagePtr currentFrame_ptr;
 Preprocessor preproc;
@@ -71,9 +72,8 @@ void drivingOrientationCB(const std_msgs::Int32::ConstPtr& driving_orientation)
 }
 
 void processImage(LaneDetector::CameraInfo& cameraInfo, LaneDetector::LaneDetectorConf& lanesConf) {
-
   if(currentFrame_ptr) {
-
+    SWRI_PROFILE("processImage");
     //information paramameters of the IPM transform
     LaneDetector::IPMInfo ipmInfo;
     LaneDetector::CameraInfo cameraInfo;
