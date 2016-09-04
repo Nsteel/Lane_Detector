@@ -179,9 +179,6 @@ namespace lane_detector{
 
     lanesConf.overlapThreshold = dynConfig.overlapThreshold;
 
-    lanesConf.ipmWindowClear = dynConfig.ipmWindowClear;
-    lanesConf.ipmWindowLeft = dynConfig.ipmWindowLeft;
-    lanesConf.ipmWindowRight = dynConfig.ipmWindowRight;
     LaneDetector::DEBUG_LINES = dynConfig.debug_lines? 1 : 0;
     }
 

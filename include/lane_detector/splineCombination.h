@@ -29,7 +29,6 @@ public:
         : config(config), ipmInfo(ipmInfo), spline1(s1), spline2(s2), spline1_idx(spline1_idx), spline2_idx(spline2_idx), centroid_spline1(centroid_s1), centroid_spline2(centroid_s2), lane_width(0), num_absent_frames(0)
         {
           calcLaneWidth();
-          correct = true;
         };
 
         inline float calcCost(SplineCombination& last_lane) {
@@ -96,7 +95,7 @@ public:
             }
             return sqrtf(dist);
           }
-          else {
+          else { //not correct
             return 10000;
           }
         };
@@ -140,12 +139,12 @@ private:
           for(int i = 0; i < closest_spline.size(); i++) {
             if(closest_spline[i].y <= second_closest_spline[0].y) {
               lane_width = std::abs(cvRound((closest_spline[i].x - second_closest_spline[0].x)));
-              //std::cout << "Middle: " << middle << std::endl;
               break;
             }
           }
 
           if(lane_width == 0) correct = false;
+          else correct = true;
         };
 };
 

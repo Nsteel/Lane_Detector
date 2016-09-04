@@ -36,6 +36,129 @@ namespace LaneDetector
  the tip of the first pixel is (0,0)
 */
 
+
+void mcvGetIpmMap(const CvMat* inImage, CvMat* outImage, CvMat* uvGrid,
+               IPMInfo *ipmInfo, const CameraInfo *cameraInfo, FLOAT_POINT2D vp,
+               list<CvPoint> *outPoints, list<CvPoint> *inPoints, list<CvPoint> * ipm_out_of_area)
+{
+  //check input images types
+  if (!(CV_ARE_TYPES_EQ(inImage, outImage) &&
+      (CV_MAT_TYPE(inImage->type)==CV_MAT_TYPE(FLOAT_MAT_TYPE) ||
+      (CV_MAT_TYPE(inImage->type)==CV_MAT_TYPE(INT_MAT_TYPE)))))
+  {
+    cerr << "Unsupported image types in mcvGetIPM";
+    exit(1);
+  }
+
+  //get size of input image
+  FLOAT u, v;
+  v = inImage->height;
+  u = inImage->width;
+
+  vp.y = MAX(0, vp.y);
+
+  //get extent of the image in the xfyf plane
+  FLOAT_MAT_ELEM_TYPE eps = ipmInfo->vpPortion * v;//VP_PORTION*v;
+  ipmInfo->ipmLeft = MAX(0, ipmInfo->ipmLeft);
+  ipmInfo->ipmRight = MIN(u-1, ipmInfo->ipmRight);
+  ipmInfo->ipmTop = MAX(vp.y+eps, ipmInfo->ipmTop);
+  ipmInfo->ipmBottom = MIN(v-1, ipmInfo->ipmBottom);
+  FLOAT_MAT_ELEM_TYPE uvLimitsp[] = {vp.x,
+    ipmInfo->ipmRight, ipmInfo->ipmLeft, vp.x,
+    ipmInfo->ipmTop, ipmInfo->ipmTop,   ipmInfo->ipmTop,  ipmInfo->ipmBottom};
+  //{vp.x, u, 0, vp.x,
+  //vp.y+eps, vp.y+eps, vp.y+eps, v};
+  CvMat uvLimits = cvMat(2, 4, FLOAT_MAT_TYPE, uvLimitsp);
+
+  //get these points on the ground plane
+  CvMat * xyLimitsp = cvCreateMat(2, 4, FLOAT_MAT_TYPE);
+  CvMat xyLimits = *xyLimitsp;
+  mcvTransformImage2Ground(&uvLimits, &xyLimits,cameraInfo);
+  //SHOW_MAT(xyLimitsp, "xyLImits");
+
+  //get extent on the ground plane
+  CvMat row1, row2;
+  cvGetRow(&xyLimits, &row1, 0);
+  cvGetRow(&xyLimits, &row2, 1);
+  double xfMax, xfMin, yfMax, yfMin;
+  cvMinMaxLoc(&row1, (double*)&xfMin, (double*)&xfMax, 0, 0, 0);
+  cvMinMaxLoc(&row2, (double*)&yfMin, (double*)&yfMax, 0, 0, 0);
+
+  INT outRow = outImage->height;
+  INT outCol = outImage->width;
+
+  FLOAT_MAT_ELEM_TYPE stepRow = (yfMax-yfMin)/outRow;
+  FLOAT_MAT_ELEM_TYPE stepCol = (xfMax-xfMin)/outCol;
+
+  //construct the grid to sample
+  CvMat *xyGrid = cvCreateMat(2, outRow*outCol, FLOAT_MAT_TYPE);
+  INT i, j;
+  FLOAT_MAT_ELEM_TYPE x, y;
+  //fill it with x-y values on the ground plane in world frame
+  for (i=0, y=yfMax-.5*stepRow; i<outRow; i++, y-=stepRow)
+    for (j=0, x=xfMin+.5*stepCol; j<outCol; j++, x+=stepCol)
+    {
+      CV_MAT_ELEM(*xyGrid, FLOAT_MAT_ELEM_TYPE, 0, i*outCol+j) = x;
+      CV_MAT_ELEM(*xyGrid, FLOAT_MAT_ELEM_TYPE, 1, i*outCol+j) = y;
+    }
+  //get their pixel values in image frame
+  mcvTransformGround2Image(xyGrid, uvGrid, cameraInfo);
+  //now loop and find the nearest pixel value for each position
+  //that's inside the image, otherwise put it zero
+  FLOAT_MAT_ELEM_TYPE ui, vi;
+  //generic loop to work for both float and int matrix types
+  #define MCV_GET_IPM(type) \
+  for (i=0; i<outRow; i++) \
+    {\
+      for (j=0; j<outCol; j++) \
+      { \
+          /*get pixel coordiantes*/ \
+          ui = CV_MAT_ELEM(*uvGrid, FLOAT_MAT_ELEM_TYPE, 0, i*outCol+j); \
+          vi = CV_MAT_ELEM(*uvGrid, FLOAT_MAT_ELEM_TYPE, 1, i*outCol+j); \
+          /*check if out-of-bounds*/ \
+          /*if (ui<0 || ui>u-1 || vi<0 || vi>v-1) \*/ \
+          if (ui<ipmInfo->ipmLeft || ui>ipmInfo->ipmRight || \
+              vi<ipmInfo->ipmTop || vi>ipmInfo->ipmBottom)\
+          { \
+            outPoints->push_back(cvPoint(j, i));\
+          } \
+          /*not out of bounds, then store mapped point*/ \
+          else \
+          { \
+            inPoints->push_back(cvPoint(j, i));\
+          } \
+          if (outPoints && \
+              (ui<ipmInfo->ipmLeft+10 || ui>ipmInfo->ipmRight-10 || \
+              vi<ipmInfo->ipmTop || vi>ipmInfo->ipmBottom-2) )\
+              ipm_out_of_area->push_back(cvPoint(j, i)); \
+      }\
+    }
+  if (CV_MAT_TYPE(inImage->type)==FLOAT_MAT_TYPE)
+  {
+      MCV_GET_IPM(FLOAT_MAT_ELEM_TYPE)
+  }
+  else
+  {
+      MCV_GET_IPM(INT_MAT_ELEM_TYPE)
+  }
+  //return the ipm info
+  ipmInfo->xLimits[0] = CV_MAT_ELEM(*xyGrid, FLOAT_MAT_ELEM_TYPE, 0, 0);
+  ipmInfo->xLimits[1] =
+    CV_MAT_ELEM(*xyGrid, FLOAT_MAT_ELEM_TYPE, 0, (outRow-1)*outCol+outCol-1);
+  ipmInfo->yLimits[1] = CV_MAT_ELEM(*xyGrid, FLOAT_MAT_ELEM_TYPE, 1, 0);
+  ipmInfo->yLimits[0] =
+    CV_MAT_ELEM(*xyGrid, FLOAT_MAT_ELEM_TYPE, 1, (outRow-1)*outCol+outCol-1);
+  ipmInfo->xScale = 1/stepCol;
+  ipmInfo->yScale = 1/stepRow;
+  ipmInfo->width = outCol;
+  ipmInfo->height = outRow;
+
+  //clean
+  cvReleaseMat(&xyLimitsp);
+  cvReleaseMat(&xyGrid);
+}
+
+
 /**
  * This function returns the Inverse Perspective Mapping
  * of the input image, assuming a flat ground plane, and
@@ -44,12 +167,12 @@ namespace LaneDetector
  * \param inImage the input image
  * \param outImage the output image in IPM
  * \param ipmInfo the returned IPM info for the transformation
- * \param focalLength focal length (in x and y direction)
  * \param cameraInfo the camera parameters
+ * \param vp vanishing point
  * \param outPoints indices of points outside the image
  */
 void mcvGetIPM(const CvMat* inImage, CvMat* outImage,
-               IPMInfo *ipmInfo, const CameraInfo *cameraInfo,
+               IPMInfo *ipmInfo, const CameraInfo *cameraInfo, FLOAT_POINT2D vp,
                list<CvPoint> *outPoints)
 {
   //check input images types
@@ -70,11 +193,7 @@ void mcvGetIPM(const CvMat* inImage, CvMat* outImage,
   v = inImage->height;
   u = inImage->width;
 
-  //get the vanishing point
-  FLOAT_POINT2D vp;
-  vp = mcvGetVanishingPoint(cameraInfo);
   vp.y = MAX(0, vp.y);
-  //vp.y = 30;
 
   //get extent of the image in the xfyf plane
   FLOAT_MAT_ELEM_TYPE eps = ipmInfo->vpPortion * v;//VP_PORTION*v;
@@ -130,7 +249,7 @@ void mcvGetIPM(const CvMat* inImage, CvMat* outImage,
   CvScalar means = cvAvg(inImage);
   double mean = means.val[0];
   //generic loop to work for both float and int matrix types
-  #define MCV_GET_IPM(type) \
+  #define MCV_GET_IPM_(type) \
   for (i=0; i<outRow; i++) \
       for (j=0; j<outCol; j++) \
       { \
@@ -171,11 +290,11 @@ void mcvGetIPM(const CvMat* inImage, CvMat* outImage,
       }
   if (CV_MAT_TYPE(inImage->type)==FLOAT_MAT_TYPE)
   {
-      MCV_GET_IPM(FLOAT_MAT_ELEM_TYPE)
+      MCV_GET_IPM_(FLOAT_MAT_ELEM_TYPE)
   }
   else
   {
-      MCV_GET_IPM(INT_MAT_ELEM_TYPE)
+      MCV_GET_IPM_(INT_MAT_ELEM_TYPE)
   }
   //return the ipm info
   ipmInfo->xLimits[0] = CV_MAT_ELEM(*xyGrid, FLOAT_MAT_ELEM_TYPE, 0, 0);
@@ -475,54 +594,5 @@ void mcvTransformImIPM2Im(const CvMat *inMat, CvMat* outMat, const IPMInfo *ipmI
   cameraInfo->opticalCenter.x *= scaleX;
   cameraInfo->opticalCenter.y *= scaleY;
  }
-
-
-/**
- * Gets the extent of the image on the ground plane given the camera parameters
- *
- * \param cameraInfo the input camera info
- * \param ipmInfo the IPM info containing the extent on ground plane:
- *  xLimits & yLimits only are changed
- *
- */
-void mcvGetIPMExtent(const CameraInfo *cameraInfo, IPMInfo *ipmInfo )
-{
-  //get size of input image
-  FLOAT u, v;
-  v = cameraInfo->imageHeight;
-  u = cameraInfo->imageWidth;
-
-  //get the vanishing point
-  FLOAT_POINT2D vp;
-  vp = mcvGetVanishingPoint(cameraInfo);
-  vp.y = MAX(0, vp.y);
-
-  //get extent of the image in the xfyf plane
-  FLOAT_MAT_ELEM_TYPE eps = VP_PORTION*v;
-  FLOAT_MAT_ELEM_TYPE uvLimitsp[] = {vp.x, u, 0, vp.x,
-                      vp.y+eps, vp.y+eps, vp.y+eps, v};
-  CvMat uvLimits = cvMat(2, 4, FLOAT_MAT_TYPE, uvLimitsp);
-
-  //get these points on the ground plane
-  CvMat * xyLimitsp = cvCreateMat(2, 4, FLOAT_MAT_TYPE);
-  CvMat xyLimits = *xyLimitsp;
-  mcvTransformImage2Ground(&uvLimits, &xyLimits,cameraInfo);
-  //SHOW_MAT(xyLimitsp, "xyLImits");
-
-  //get extent on the ground plane
-  CvMat row1, row2;
-  cvGetRow(&xyLimits, &row1, 0);
-  cvGetRow(&xyLimits, &row2, 1);
-  double xfMax, xfMin, yfMax, yfMin;
-  cvMinMaxLoc(&row1, (double*)&xfMin, (double*)&xfMax, 0, 0, 0);
-  cvMinMaxLoc(&row2, (double*)&yfMin, (double*)&yfMax, 0, 0, 0);
-
-  //return
-  ipmInfo->xLimits[0] = xfMin;
-  ipmInfo->xLimits[1] = xfMax;
-  ipmInfo->yLimits[1] = yfMax;
-  ipmInfo->yLimits[0] = yfMin;
-
-}
 
 } // namespace LaneDetector

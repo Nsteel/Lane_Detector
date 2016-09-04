@@ -80,13 +80,18 @@ typedef struct CameraInfo
  * \param inImage the input image
  * \param outImage the output image in IPM
  * \param ipmInfo the returned IPM info for the transformation
- * \param focalLength focal length (in x and y direction)
  * \param cameraInfo the camera parameters
+ * \param vp vanishing point
+ * \param outPoints indices of points outside the image
  */
 void mcvGetIPM(const CvMat* inImage, CvMat* outImage,
                IPMInfo *ipmInfo, const CameraInfo *cameraInfo,
+               FLOAT_POINT2D vp,
                list<CvPoint>* outPoints=NULL);
 
+void mcvGetIpmMap(const CvMat* inImage, CvMat* outImage, CvMat* uvGrid,
+              IPMInfo *ipmInfo, const CameraInfo *cameraInfo, FLOAT_POINT2D vp,
+              list<CvPoint> *outPoints, list<CvPoint> *inPoints, list<CvPoint> * ipm_out_of_area);
 
 /**
  * Transforms points from the image frame (uv-coordinates)
@@ -145,16 +150,6 @@ void mcvPointImIPM2World(FLOAT_POINT2D *point, const IPMInfo *ipmInfo);
  *
  */
  void mcvScaleCameraInfo (CameraInfo *cameraInfo, CvSize size);
-
-/**
- * Gets the extent of the image on the ground plane given the camera parameters
- *
- * \param cameraInfo the input camera info
- * \param ipmInfo the IPM info containing the extent on ground plane:
- *  xLimits & yLimits only are changed
- *
- */
-void mcvGetIPMExtent(const CameraInfo *cameraInfo, IPMInfo *ipmInfo);
 
 /**
  * Converts from IPM pixel coordinates into world coordinates

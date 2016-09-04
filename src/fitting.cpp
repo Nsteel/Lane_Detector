@@ -2,6 +2,7 @@
 #include <opencv2/highgui/highgui.hpp>
 #include <algorithm>
 #include <vector>
+#include <omp.h>
 #include <swri_profiler/profiler.h>
 
 
@@ -18,9 +19,7 @@ lane_detector::Lane Fitting::fitting(cv::Mat& original, cv::Mat& processed_bgr, 
         if(last_lane.num_absent_frames >= config.lane_num_absent_frames) last_lane = SplineCombination();
 
         cv::Scalar Colors[] = { cv::Scalar(255, 0, 0), cv::Scalar(0, 255, 0), cv::Scalar(0, 0, 255), cv::Scalar(255, 255, 0), cv::Scalar(0, 255, 255), cv::Scalar(255, 0, 255), cv::Scalar(255, 127, 255), cv::Scalar(127, 0, 255), cv::Scalar(127, 0, 127) };
-        FittingApproach fitSpline;
         std::vector<cv::Point> splinePoints;
-        std::vector< std::vector<cv::Point> > splines;
         std::vector<cv::Point2f> centroids;
         std::vector<cv::Rect> rects;
         SplineCombination current_lane;
@@ -34,22 +33,32 @@ lane_detector::Lane Fitting::fitting(cv::Mat& original, cv::Mat& processed_bgr, 
         LaneDetector::mcvGroupBoundingBoxes(rectsAux, LaneDetector::LINE_VERTICAL, lanesConf.groupThreshold);
         rects = std::vector<cv::Rect>(rectsAux.begin(), rectsAux.end());
         lane_detector::utils::getRectsCentroids(rects, centroids);
+        std::vector< std::vector<cv::Point> > splines(rects.size());
         ROS_DEBUG("Lanes detected: %lu", rects.size());
 
-        for(cv::Rect bounding_box : rects) {
-          fitSpline.fitting(preprocessed, bounding_box, splinePoints);
-          std::sort(splinePoints.begin(), splinePoints.end(), lane_detector::utils::sortPointsY);
-          splines.push_back(splinePoints);
+        if(rects.size() > 0) {
+          omp_set_num_threads(config.number_of_threads);
+          #pragma omp parallel
+          {
+              std::vector<cv::Point> spline_private;
+              int index;
+              #pragma omp for nowait//fill splines_private in parallel
+              for(int i=0; i< rects.size(); i++) {
+                cv::Rect bounding_box = rects[i];
+                getSpline(preprocessed, bounding_box, spline_private);
+                index = i;
+              }
+              #pragma omp critical
+              {
+              if(index < splines.size()) splines.at(index) = spline_private;
+            }
+          }
+      }
 
-          // draw the spline
-	        if(config.draw_splines) lane_detector::utils::drawSpline(processed_bgr, splinePoints, 2, cv::Scalar(255, 0, 0));
-
-          if(config.draw_boxes) cv::rectangle(processed_bgr, cv::Point(bounding_box.x, bounding_box.y),
-                                                  cv::Point(bounding_box.x + bounding_box.width-1, bounding_box.y + bounding_box.height-1),
-                                                  cv::Scalar(0,0,255));
-
-          splinePoints.clear();
-        }
+       // draw the spline
+       if(config.draw_splines) drawSplines(processed_bgr, splines);
+       //draw the bounding boxes
+       if(config.draw_boxes) drawBoxes(processed_bgr, rects);
 
         //std::cout << "centroids: " << centroids.size() << std::endl;
         if(centroids.size() >= 2) {
@@ -215,5 +224,28 @@ void Fitting::findCurrentLane(const std::vector<cv::Point2f>& centroids, const s
       float cost = spline_combinations[0].calcCost(last_lane);
       if(cost < config.lane_threshold) current_lane = spline_combinations[0];
       //std::cout << "single cost:" << cost << std::endl;
+  }
+}
+
+void Fitting::getSpline(cv::Mat& inImage, cv::Rect& bounding_box, std::vector<cv::Point>& spline) {
+    FittingApproach fitSpline;
+    std::vector<cv::Point> splinePoints;
+    fitSpline.fitting(inImage, bounding_box, splinePoints);
+    std::sort(splinePoints.begin(), splinePoints.end(), lane_detector::utils::sortPointsY);
+    spline = splinePoints;
+    splinePoints.clear();
+}
+
+void Fitting::drawSplines(cv::Mat& outImage, std::vector< std::vector<cv::Point> > & splines) {
+  for(auto splinePoints : splines) {
+    lane_detector::utils::drawSpline(outImage, splinePoints, 2, cv::Scalar(255, 0, 0));
+  }
+}
+
+void Fitting::drawBoxes(cv::Mat& outImage, std::vector<cv::Rect>& rects) {
+  for(cv::Rect bounding_box : rects) {
+    cv::rectangle(outImage, cv::Point(bounding_box.x, bounding_box.y),
+                                            cv::Point(bounding_box.x + bounding_box.width-1, bounding_box.y + bounding_box.height-1),
+                                            cv::Scalar(0,0,255));
   }
 }

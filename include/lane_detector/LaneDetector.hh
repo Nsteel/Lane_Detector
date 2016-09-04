@@ -108,13 +108,6 @@ typedef struct LaneDetectorConf
 
   ///Overlap threshold to use for grouping of bounding boxes
   float overlapThreshold;
-  
-  ///Whether to clear part of the IPM image
-  bool ipmWindowClear;
-  ///Left corrdinate of window to keep in IPM
-  int ipmWindowLeft;
-  ///Left corrdinate of window to keep in IPM
-  int ipmWindowRight;
 
 } LaneDetectorConf;
 
@@ -145,7 +138,7 @@ void mcvIntersectLineRThetaWithBB(FLOAT r, FLOAT theta, const CvSize bbox, Line 
 void mcvIntersectLineWithBB(const Line *inLine, const CvSize bbox, Line *outLine);
 bool mcvIsPointInside(FLOAT_POINT2D point, CvSize bbox);
 void mcvLineXY2RTheta(const Line &line, float &r, float &theta);
-void getIPM(CvMat **inImage, CameraInfo *cameraInfo, IPMInfo* ipmInfo, LaneDetectorConf *lanesConf, list<CvPoint>* outPixels);
+void getIpmMap(CvMat* inImage, CameraInfo *cameraInfo, IPMInfo* ipmInfo, FLOAT_POINT2D vp, LaneDetectorConf *lanesConf, list<CvPoint>* outPixels, list<CvPoint>* inPixels, list<CvPoint> *ipm_out_of_area,  CvMat* uvGrid);
 void mcvSampleWeighted(const CvMat *cumSum, int numSamples, CvMat *randInd, CvRNG *rng);
 void  mcvSetMat(CvMat *inMat, CvRect mask, double val);
 void mcvThresholdLower(const CvMat *inMat, CvMat *outMat, FLOAT threshold);

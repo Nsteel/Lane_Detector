@@ -71,60 +71,28 @@ void mcvGetGaussianKernel(CvMat *kernel, unsigned char w, FLOAT sigma)
   * \param image the input/output image
   * \param cameraInfo the camera parameters
   * \param ipmInfo output for parameters of the performed IPM transformation
+  * \param vp vanishing point
   * \param lanesConf parameters for lane detection
   */
- void getIPM(CvMat **inImage,
-                  CameraInfo *cameraInfo, IPMInfo* ipmInfo, LaneDetectorConf *lanesConf, list<CvPoint>* outPixels)
+ void getIpmMap(CvMat *inImage,
+                  CameraInfo *cameraInfo, IPMInfo* ipmInfo, FLOAT_POINT2D vp, LaneDetectorConf *lanesConf, list<CvPoint>* outPixels,  list<CvPoint>* inPixels, list<CvPoint> *ipm_out_of_area, CvMat* uvGrid)
  {
    //input size
-   CvSize inSize = cvSize((*inImage)->width, (*inImage)->height);
-
-   CvMat *image = cvCloneMat(*inImage);
+   CvSize inSize = cvSize(inImage->width, inImage->height);
 
    //Get IPM
    CvSize ipmSize = cvSize((int)lanesConf->ipmWidth,
        (int)lanesConf->ipmHeight);
-   CvMat * ipm;
-   ipm = cvCreateMat(ipmSize.height, ipmSize.width, (*inImage)->type);
+   CvMat* ipm;
+   ipm = cvCreateMat(ipmSize.height, ipmSize.width, inImage->type);
    ipmInfo->vpPortion = lanesConf->ipmVpPortion;
    ipmInfo->ipmLeft = lanesConf->ipmLeft;
    ipmInfo->ipmRight = lanesConf->ipmRight;
    ipmInfo->ipmTop = lanesConf->ipmTop;
    ipmInfo->ipmBottom = lanesConf->ipmBottom;
    ipmInfo->ipmInterpolation = lanesConf->ipmInterpolation;
-   mcvGetIPM(image, ipm, ipmInfo, cameraInfo, outPixels);
-
-   if(DEBUG_LINES)
-   {
-    //debugging
-    CvMat *dbIpmImage;
-     dbIpmImage = cvCreateMat(ipm->height, ipm->width, ipm->type);
-     cvCopy(ipm, dbIpmImage);
-     //show the IPM image
-     SHOW_IMAGE(dbIpmImage, "IPM image", 10);
-     cvReleaseMat(&dbIpmImage);
-   }
-
- #warning "Check this clearing of IPM image for 2 lanes"
-   if (lanesConf->ipmWindowClear)
-   {
-     //check to blank out other periferi of the image
-     //blank from 60->100 (width 40)
-     CvRect mask = cvRect(lanesConf->ipmWindowLeft, 0,
-                          lanesConf->ipmWindowRight -
-                          lanesConf->ipmWindowLeft + 1,
-                          ipm->height);
-     mcvSetMat(ipm, mask, 0);
-   }
-
-   //show filtered image
-   if (DEBUG_LINES) {
-     SHOW_IMAGE(ipm, "Lane unthresholded filtered", 10);
-   }
-
-  cvReleaseMat(inImage);
-  *inImage = ipm;
-  cvReleaseMat(&image);
+   mcvGetIpmMap(inImage, ipm, uvGrid, ipmInfo, cameraInfo, vp, outPixels, inPixels, ipm_out_of_area);
+   cvReleaseMat(&ipm);
  }
 
  /** This function thresholds the image below a certain value to the threshold

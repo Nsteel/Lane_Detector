@@ -76,7 +76,6 @@ void processImage(LaneDetector::CameraInfo& cameraInfo, LaneDetector::LaneDetect
     SWRI_PROFILE("processImage");
     //information paramameters of the IPM transform
     LaneDetector::IPMInfo ipmInfo;
-    LaneDetector::CameraInfo cameraInfo;
     // detect bounding boxes arround the lanes
     std::vector<LaneDetector::Box> boxes;
     cv::Mat processed_bgr = currentFrame_ptr->image;
@@ -168,7 +167,7 @@ int main(int argc, char **argv){
 
         while (!info_set) {
           ros::spinOnce();
-          ROS_ERROR("No information on topic camera_info received");
+          ROS_WARN("No information on topic camera_info received");
         }
 
         //Stop the Subscriber

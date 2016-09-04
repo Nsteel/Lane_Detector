@@ -42,6 +42,9 @@ public:
 private:
         void findCurrentLane(const std::vector<cv::Point2f>& centroids, const std::vector<std::vector<cv::Point>>& splines,  SplineCombination& current_lane, cv::Mat& image);
         float calcCost(SplineCombination& combination);
+        void getSpline(cv::Mat& inImage, cv::Rect& rect, std::vector<cv::Point>& spline);
+        void drawSplines(cv::Mat& outImage, std::vector< std::vector<cv::Point> > & splines);
+        void drawBoxes(cv::Mat& outImage, std::vector<cv::Rect>& rects);
         lane_detector::DetectorConfig config;
         LaneDetector::LaneDetectorConf lanesConf;
         LaneDetector::IPMInfo ipmInfo;
