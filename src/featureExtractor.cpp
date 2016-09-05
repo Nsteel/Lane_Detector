@@ -10,9 +10,9 @@ void FeatureExtractor::extract(cv::Mat& original, cv::Mat& preprocessed, std::ve
 
         std::vector<float> lineScores;
         std::vector<LaneDetector::Line> lanes;
-
         //get the initial lines
         LaneDetector::getLines(preprocessed_ptr, LaneDetector::LINE_VERTICAL, lanes, lineScores, &lanesConf);
+
         for(unsigned int ind = 0; ind < lineScores.size(); ind++)
         {
           lanes[ind].score = lineScores[ind];

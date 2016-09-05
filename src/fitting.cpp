@@ -36,24 +36,24 @@ lane_detector::Lane Fitting::fitting(cv::Mat& original, cv::Mat& processed_bgr, 
         std::vector< std::vector<cv::Point> > splines(rects.size());
         ROS_DEBUG("Lanes detected: %lu", rects.size());
 
+
         if(rects.size() > 0) {
           omp_set_num_threads(config.number_of_threads);
-          #pragma omp parallel
+          #pragma omp parallel shared(splines)
           {
-              std::vector<cv::Point> spline_private;
-              int index;
-              #pragma omp for nowait//fill splines_private in parallel
-              for(int i=0; i< rects.size(); i++) {
-                cv::Rect bounding_box = rects[i];
-                getSpline(preprocessed, bounding_box, spline_private);
-                index = i;
-              }
+            std::vector<cv::Point> spline_private;
+            #pragma omp for nowait//fill splines_private in parallel
+            for(int i=0; i< rects.size(); i++) {
+              cv::Rect bounding_box = rects[i];
+              getSpline(preprocessed, bounding_box, spline_private);
               #pragma omp critical
               {
-              if(index < splines.size()) splines.at(index) = spline_private;
+              splines.at(i) = spline_private;
+              }
+              spline_private.clear();
             }
           }
-      }
+        }
 
        // draw the spline
        if(config.draw_splines) drawSplines(processed_bgr, splines);
@@ -80,8 +80,8 @@ lane_detector::Lane Fitting::fitting(cv::Mat& original, cv::Mat& processed_bgr, 
 
         if(current_lane.correct && config.draw_splines) {
           //std::cout << "lane_width: " << current_lane.lane_width << std::endl;
-          cv::circle(processed_bgr, current_lane.centroid_spline1, 5, cv::Scalar(0,255,0), 2);
-          cv::circle(processed_bgr, current_lane.centroid_spline2, 5, cv::Scalar(0,255,0), 2);
+          cv::circle(processed_bgr, current_lane.centroid_spline1, 5, cv::Scalar(0,255,0), -1);
+          cv::circle(processed_bgr, current_lane.centroid_spline2, 5, cv::Scalar(0,255,0), -1);
           if(config.draw_splines) lane_detector::utils::drawSpline(processed_bgr, current_lane.spline1, 2, cv::Scalar(0, 255, 0));
           if(config.draw_splines) lane_detector::utils::drawSpline(processed_bgr, current_lane.spline2, 2, cv::Scalar(0, 255, 0));
         }
@@ -106,16 +106,25 @@ lane_detector::Lane Fitting::fitting(cv::Mat& original, cv::Mat& processed_bgr, 
           right_spline = current_lane.right_spline;
           left_spline = current_lane.left_spline;
 
-          for(int i = 0; i < longest_spline.size(); i++) {
-            if(longest_spline == left_spline) {
-              cv::Point p = longest_spline[i];
-              p.x += current_lane.lane_width/2;
-              guide_spline.push_back(p);
-            }
-            else { //longest_spline == right_spline
-              cv::Point p = longest_spline[i];
-              p.x -= current_lane.lane_width/2;
-              guide_spline.push_back(p);
+          guide_spline.resize(longest_spline.size());
+
+          #pragma omp parallel shared(guide_spline)
+          {
+            cv::Point p;
+            #pragma omp for nowait
+            for(int i = 0; i < longest_spline.size(); i++) {
+              if(longest_spline == left_spline) {
+                p = longest_spline[i];
+                p.x += current_lane.lane_width/2;
+              }
+              else { //longest_spline == right_spline
+                p = longest_spline[i];
+                p.x -= current_lane.lane_width/2;
+              }
+              #pragma omp critical
+              {
+                guide_spline.at(i) = p;
+              }
             }
           }
 
@@ -202,7 +211,6 @@ void Fitting::findCurrentLane(const std::vector<cv::Point2f>& centroids, const s
         //std::cout << "Cost: " << cost[i+j*N] << std::endl;
       }
     }
-
     AssignmentProblemSolver APS;
     APS.Solve(cost, N, M, assignment, AssignmentProblemSolver::optimal);
 
