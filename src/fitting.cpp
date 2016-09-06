@@ -106,21 +106,21 @@ lane_detector::Lane Fitting::fitting(cv::Mat& original, cv::Mat& processed_bgr, 
           right_spline = current_lane.right_spline;
           left_spline = current_lane.left_spline;
 
-          guide_spline.resize(longest_spline.size());
+          guide_spline.resize(right_spline.size());
 
           #pragma omp parallel shared(guide_spline)
           {
             cv::Point p;
             #pragma omp for nowait
-            for(int i = 0; i < longest_spline.size(); i++) {
-              if(longest_spline == left_spline) {
+            for(int i = 0; i < right_spline.size(); i++) {
+              /*if(longest_spline == left_spline) {
                 p = longest_spline[i];
                 p.x += current_lane.lane_width/2;
-              }
-              else { //longest_spline == right_spline
-                p = longest_spline[i];
+              }*/
+              //else { //longest_spline == right_spline
+                p = right_spline[i];
                 p.x -= current_lane.lane_width/2;
-              }
+              //}
               #pragma omp critical
               {
                 guide_spline.at(i) = p;

@@ -54,7 +54,7 @@ void Preprocessor::preprocess(cv::Mat& originalImg, cv::Mat& img, LaneDetector::
           cv::ocl::oclMat ocl_img(img);
           cv::ocl::subtract(ocl_img, cv::Scalar(mean_image), ocl_img);
           cv::ocl::sepFilter2D(ocl_img, ocl_img, CV_32FC1, kernel_x, kernel_y);
-          cv::ocl::abs(ocl_img, ocl_img);
+          //cv::ocl::abs(ocl_img, ocl_img);
           img = ocl_img;
         }
         else {
