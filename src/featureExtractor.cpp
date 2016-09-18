@@ -19,6 +19,17 @@ void FeatureExtractor::extract(cv::Mat& original, cv::Mat& preprocessed, std::ve
         }
 
         mcvGetLinesBoundingBoxesVec(lanes, LaneDetector::LINE_VERTICAL, cvSize(preprocessed.cols-1, preprocessed.rows-1), boxes);
+
+        if(config.draw_lines) {
+          for (LaneDetector::Box box : boxes)
+          {
+            cv::Point startPoint(box.line.startPoint.x, box.line.startPoint.y);
+            cv::Point endPoint(box.line.endPoint.x, box.line.endPoint.y);
+            cv::clipLine(cv::Size(original.cols, original.rows), startPoint, endPoint);
+            cv::line(original, startPoint, endPoint, cv::Scalar(0,255,0));
+        }
+      }
+
         mcvGroupBoundingBoxesVec(boxes, LaneDetector::LINE_VERTICAL, lanesConf.overlapThreshold);
         ROS_DEBUG("Bounding boxes count:%lu", boxes.size());
         if(boxes.size() > config.max_num_lanes) {
@@ -30,14 +41,4 @@ void FeatureExtractor::extract(cv::Mat& original, cv::Mat& preprocessed, std::ve
         LaneDetector::mcvScaleMat(preprocessed_ptr, preprocessed_ptr);
         preprocessed = cv::cvarrToMat(preprocessed_ptr, true);
         //cvReleaseMat(&preprocessed_ptr);
-
-        if(config.draw_lines) {
-          for (LaneDetector::Box box : boxes)
-          {
-            cv::Point startPoint(box.line.startPoint.x, box.line.startPoint.y);
-            cv::Point endPoint(box.line.endPoint.x, box.line.endPoint.y);
-            cv::clipLine(cv::Size(original.cols, original.rows), startPoint, endPoint);
-            cv::line(original, startPoint, endPoint, cv::Scalar(0,255,0));
-        }
-      }
 }

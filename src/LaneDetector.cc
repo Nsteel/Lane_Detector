@@ -1229,7 +1229,7 @@ void mcvGetGaussianKernel(CvMat *kernel, unsigned char w, FLOAT sigma)
          }
          lines[i].slope_type = slopeType;
          //end = (int)fmax(lines[i].startPoint.x, lines[i].endPoint.x);
-         boxes.push_back(Box {cvRect(start, 0, end-start+1, size.height-1), lines[i]});
+         boxes.push_back(Box {cvRect(start, 1, end-start+1, size.height-1), lines[i]});
        }
        break;
 
