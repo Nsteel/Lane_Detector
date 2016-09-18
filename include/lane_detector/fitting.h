@@ -32,11 +32,21 @@ public:
                 tracker.setMaximumAllowedSkippedFrames(config.tracking_num_absent_frames);
                 tracker.setMinimumSeenFrames(config.tracking_num_seen_frames);
                 tracker.setMaxTraceLength(50);
+                last_lane = SplineCombination();
                 driving_orientation = config.driving_orientation == 0? lane_detector::on_the_right :
                                                                        lane_detector::on_the_left;
         };
         inline void setDrivingOrientation(lane_detector::Driving driving_orientation) {
           this->driving_orientation = driving_orientation;
+          //Reinitialize Tracker
+          tracker = CTracker();
+          tracker.setDt(config.tracking_dt);
+          tracker.setAccelNoiseMag(config.tracking_acc_noise_magnitude);
+          tracker.setDistThres(config.tracking_dist_threshold);
+          tracker.setMaximumAllowedSkippedFrames(config.tracking_num_absent_frames);
+          tracker.setMinimumSeenFrames(config.tracking_num_seen_frames);
+          tracker.setMaxTraceLength(50);
+          last_lane = SplineCombination();
         }
         lane_detector::Lane fitting(cv::Mat& original, cv::Mat& preprocessed_bgr, cv::Mat& preprocessed, LaneDetector::IPMInfo& ipmInfo, LaneDetector::CameraInfo& cameraInfo, std::vector<LaneDetector::Box>& boxes);
 private:
