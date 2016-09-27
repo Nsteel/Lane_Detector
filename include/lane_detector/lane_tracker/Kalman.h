@@ -3,6 +3,7 @@
 #include <opencv/cv.h>
 
 // http://www.morethantechnical.com/2011/06/17/simple-kalman-filter-for-tracking-using-opencv-2-2-w-code/
+//die folgenden Codeabschnitte sind open source und wurden aus https://github.com/Smorodov/Multitarget-tracker genommen
 class TKalmanFilter
 {
 public:

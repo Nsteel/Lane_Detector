@@ -49,6 +49,18 @@ namespace lane_detector{
       }
     }
 
+    std::vector<cv::Point> splineSampling(const std::vector<cv::Point>& spline) {
+
+      assert(spline.size() >= 4);
+      cv::Point p1 = spline[0];
+      cv::Point p2 = spline[(spline.size()-1)*0.3333];
+      cv::Point p3 = spline[(spline.size()-1)*0.6666];
+      cv::Point p4 = spline[(spline.size()-1)];
+      std::vector<cv::Point> output {p4, p3, p2, p1};
+
+      return output;
+    }
+
     inline void getRectsCentroids(const std::vector<cv::Rect>& rects, std::vector<cv::Point2f>& centroids) {
       centroids.clear();
       for(cv::Rect rect : rects) {
@@ -158,7 +170,7 @@ namespace lane_detector{
     lanesConf.kernelWidth = dynConfig.kernelWidth;
     lanesConf.kernelHeight = dynConfig.kernelHeight;
     lanesConf.lowerQuantile = dynConfig.lowerQuantile;
-    lanesConf.localMaxima =dynConfig.localMaxima;
+    lanesConf.localMaxima = true;
     lanesConf.binarize = dynConfig.binarize;
     lanesConf.detectionThreshold = dynConfig.detectionThreshold;
     lanesConf.smoothScores = dynConfig.smoothScores;

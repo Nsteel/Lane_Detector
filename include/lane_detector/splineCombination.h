@@ -24,10 +24,11 @@ inline float calcSlope(cv::Point& pt1, const cv::Point& pt2) {
 
 class SplineCombination {
 public:
-        inline SplineCombination() { correct = false; num_absent_frames = 0;};
+        inline SplineCombination() { correct = false; num_absent_frames = 0; closest_points_set = false;};
         inline SplineCombination(const lane_detector::DetectorConfig& config, const LaneDetector::IPMInfo& ipmInfo, const std::vector<cv::Point>& s1, const std::vector<cv::Point>& s2, const uint32_t& spline1_idx, const uint32_t& spline2_idx, const cv::Point2f& centroid_s1, const cv::Point2f& centroid_s2)
         : config(config), ipmInfo(ipmInfo), spline1(s1), spline2(s2), spline1_idx(spline1_idx), spline2_idx(spline2_idx), centroid_spline1(centroid_s1), centroid_spline2(centroid_s2), lane_width(0), num_absent_frames(0)
         {
+          closest_points_set = false;
           calcLaneWidth();
         };
 
@@ -114,6 +115,9 @@ public:
         cv::Point centroid_left, centroid_right;
         std::vector<cv::Point> longest_spline;
         bool correct;
+        cv::Point closest_point_s1;
+        cv::Point closest_point_s2;
+        bool closest_points_set;
 
 private:
         LaneDetector::IPMInfo ipmInfo;
@@ -138,6 +142,9 @@ private:
 
           for(int i = 0; i < closest_spline.size(); i++) {
             if(closest_spline[i].y <= second_closest_spline[0].y) {
+              closest_point_s1 = closest_spline[i];
+              closest_point_s2 = second_closest_spline[0];
+              closest_points_set = true;
               lane_width = std::abs(cvRound((closest_spline[i].x - second_closest_spline[0].x)));
               break;
             }

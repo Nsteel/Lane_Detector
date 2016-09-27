@@ -8,6 +8,8 @@
 #include <memory>
 #include <array>
 
+//die folgenden Codeabschnitte sind open source und wurden aus https://github.com/Smorodov/Multitarget-tracker genommen
+
 // --------------------------------------------------------------------------
 class CTrack
 {

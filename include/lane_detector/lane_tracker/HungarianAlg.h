@@ -4,6 +4,7 @@
 #include <time.h>
 #include <lane_detector/lane_tracker/defines.h>
 // http://community.topcoder.com/tc?module=Static&d1=tutorials&d2=hungarianAlgorithm
+//die folgenden Codeabschnitte sind open source und wurden aus https://github.com/Smorodov/Multitarget-tracker genommen
 
 typedef std::vector<int> assignments_t;
 typedef std::vector<track_t> distMatrix_t;

@@ -176,61 +176,77 @@ lane_detector::Lane Fitting::fitting(cv::Mat& original, cv::Mat& processed_bgr, 
              lane_detector::utils::drawSpline(original, left_spline, 6, cv::Scalar(0,255,0));
              lane_detector::utils::drawSpline(original, right_spline, 6, cv::Scalar(0,255,0));
             }
-          }
+            left_spline = lane_detector::utils::splineSampling(left_spline);
+            right_spline = lane_detector::utils::splineSampling(right_spline);
+            splines.clear();
+            splines.push_back(left_spline);
+            splines.push_back(right_spline);
         }
-      //cv::line(processed_bgr, cv::Point(car_position.x, 0), cv::Point(car_position.x, lanesConf.ipmHeight-1), cv::Scalar(0, 255, 239), 1);
+      }
+      else{
+        splines.clear();
+      }
+      if(config.transform_back) {
+          // save results?
+          outputFile << "frame#" << setw(8) << setfill('0') << index <<
+            " has " << splines.size() << " splines" << endl;
+          for (int i=0; i<splines.size(); ++i)
+          {
+            outputFile << "\tspline#" << i+1 << " has " <<
+              4 << " points and score " <<
+              1000 << endl;
+            for (int j=0; j<=3; ++j)
+              outputFile << "\t\t" <<
+                splines[i][j].x << ", " <<
+                splines[i][j].y << endl;
+          }
+          index++;
+      }
       return current_lane_msg;
 }
 
-// -------------------------------------------------
-// Solving assignment problem for the lane
-// ------------------------------------------------
 void Fitting::findCurrentLane(const std::vector<cv::Point2f>& centroids, const std::vector<std::vector<cv::Point>>& splines, SplineCombination& current_lane, cv::Mat& image) {
 
   SWRI_PROFILE("findCurrentLane");
 
   std::vector<SplineCombination> spline_combinations;
 
-  assignments_t assignment;
+  SplineCombination best_combination;
+  float best_cost;
 
   lane_detector::utils::makeSplineCombinations(config, ipmInfo, centroids, splines, spline_combinations);
 
-  //One lanes has to be assigned
-  size_t N = 1;
-  size_t M = spline_combinations.size();
-  distMatrix_t cost(N * M);
+  std::vector<float> costs(spline_combinations.size());
 
   //std::cout << "Combis: " << spline_combinations.size() << std::endl;
 
   if(spline_combinations.size() > 1) {
-      for (size_t i = 0; i < N; i++)
+    for (int i = 0; i <  spline_combinations.size(); i++)
     {
-      for (size_t j = 0; j <  spline_combinations.size(); j++)
-      {
-        cost[i + j * N] = calcCost(spline_combinations[j]);
-        //std::cout << "Cost: " << cost[i+j*N] << std::endl;
-      }
+      costs.at(i) = calcCost(spline_combinations[i]);
+      //if(spline_combinations[i].closest_points_set)
+              //cv::line(image, spline_combinations[i].closest_point_s1, spline_combinations[i].closest_point_s2, cv::Scalar(255, 255, 0), 1);
+      //std::cout << "Cost: " << costs[i] << std::endl;
     }
-    AssignmentProblemSolver APS;
-    APS.Solve(cost, N, M, assignment, AssignmentProblemSolver::optimal);
 
-    // -----------------------------------
-    // clean assignment from pairs with large distance
-    // -----------------------------------
-    for (size_t i = 0; i < assignment.size(); i++)
-    {
-      if (assignment[i] != -1)
-      {
-        //std::cout << "assing: " << assignment[i] << " cost: " << cost[i + assignment[i] * N] << std::endl;
-        if(cost[i + assignment[i] * N] < config.lane_threshold) current_lane = spline_combinations[assignment[i]];
+    best_combination = spline_combinations.at(0);
+    best_cost = costs.at(0);
+
+    for(int i = 1; i < spline_combinations.size(); i++) {
+      if(costs.at(i) < best_cost) {
+        best_cost = costs.at(i);
+        best_combination = spline_combinations.at(i);
       }
-      //else std::cout << "Assign problem" << std::endl;
     }
+
+    if(best_cost < config.lane_threshold) current_lane = best_combination;
   }
 
   else if(spline_combinations.size() > 0) {
       float cost = spline_combinations[0].calcCost(last_lane);
       if(cost < config.lane_threshold) current_lane = spline_combinations[0];
+      //if(spline_combinations[0].closest_points_set)
+              //cv::line(image, spline_combinations[0].closest_point_s1, spline_combinations[0].closest_point_s2, cv::Scalar(255, 255, 0), 1);
       //std::cout << "single cost:" << cost << std::endl;
   }
 }

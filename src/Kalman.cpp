@@ -3,6 +3,8 @@
 #include <iostream>
 #include <vector>
 
+//die folgenden Codeabschnitte sind open source und wurden aus https://github.com/Smorodov/Multitarget-tracker genommen
+
 //---------------------------------------------------------------------------
 //---------------------------------------------------------------------------
 TKalmanFilter::TKalmanFilter(Point_t pt, track_t dt, track_t Accel_noise_mag)

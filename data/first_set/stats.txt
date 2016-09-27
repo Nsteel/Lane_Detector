@@ -1,0 +1,40 @@
+Detection File 104: /Users/N/first_set/results.txt
+Number of frames = 104
+ 
+Total detections = 204
+Total truth = 208
+ 
+Number of correct detections = 204
+Number of false detections = 0
+ 
+Percentage of correct detections = 0.980769
+Percentage of false detections = 0.000000
+ 
+False detections/frame= 0.000000
+
+
+
+Overall results
+Number of frames = 104
+ 
+Total detections = 204
+Total truth = 208
+ 
+Number of correct detections = 204
+Number of false detections = 0
+ 
+Percentage of correct detections = 0.980769
+Percentage of false detections = 0.000000
+ 
+False detections/frame= 0.000000
+
+
+
+-----Summary results
+ 
+Detection /Users/N/first_set/results.txt
+Total = 208
+Total detections = 204
+correct detections = 98.08
+false detections = 0.00
+false detections / frame = 0.000

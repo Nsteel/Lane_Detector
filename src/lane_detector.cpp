@@ -28,6 +28,7 @@
 #include <lane_detector/mcv.hh>
 #include <lane_detector/utils.h>
 #include <swri_profiler/profiler.h>
+#include<ros/package.h>
 
 cv_bridge::CvImagePtr currentFrame_ptr;
 Preprocessor preproc;
@@ -91,32 +92,6 @@ void processImage(LaneDetector::CameraInfo& cameraInfo, LaneDetector::LaneDetect
     cv::waitKey(1);
 
     //cv::line(currentFrame_ptr->image, cv::Point((currentFrame_ptr->image.cols-1)/2, 0), cv::Point((currentFrame_ptr->image.cols-1)/2, currentFrame_ptr->image.rows), cv::Scalar(0, 255, 239), 1);
-       // print lanes
-        /*for(int i=0; i<splines.size(); i++)
-         {
-           if (splines[i].color == LaneDetector::LINE_COLOR_YELLOW)
-             mcvDrawSpline(raw_ptr, splines[i], CV_RGB(255,255,0), 3);
-           else
-             mcvDrawSpline(raw_ptr, splines[i], CV_RGB(0,255,0), 3);
-         }
-
-        std::cout << "frame#" << setw(8) << setfill('0') << 0 <<
-          " has " << splines_world.size() << " splines" << endl;
-        for (int i=0; i<splines_world.size(); ++i)
-        {
-          std::cout << "\tspline#" << i+1 << " has " <<
-            splines_world[i].degree+1 << " points and score " <<
-            splineScores[i] << endl;
-          for (int j=0; j<=splines_world[i].degree; ++j)
-            std::cout<< "\t\t" <<
-              splines_world[i].points[j].x << ", " <<
-              splines_world[i].points[j].y << endl;
-          char str[256];
-          sprintf(str, "%d", i);
-          LaneDetector::mcvDrawText(raw_ptr, str,
-                      cvPointFrom32f(splines[i].points[splines[i].degree]),
-                                      1, CV_RGB(0, 0, 255));
-        }*/
   }
 }
 
@@ -139,6 +114,59 @@ void readImg(const sensor_msgs::ImageConstPtr& img)
                 return;
         }
 
+}
+
+void laneDetectionFromFiles() {
+  std::vector<cv_bridge::CvImagePtr> frames;
+  sensor_msgs::Image currentFrame;
+  std::stringstream ss;
+  string imgName;
+  int i = 0;
+  while(i <= 87) {
+    if(i < 10) {
+      ss << "frame000" << i << ".jpg";
+    }
+    else if(i < 100) {
+      ss << "frame00" << i << ".jpg";
+    }
+    else if(i < 1000) {
+      ss << "frame0" << i << ".jpg";
+    }
+    std::cout << imgName << std::endl;
+    i++;
+    imgName = ss.str();
+    cv::Mat img = cv::imread(ros::package::getPath("lane_detector") + "/data/" + "new_set/" + imgName);
+    cv_bridge::CvImage img_bridge;
+    std_msgs::Header header; // empty header
+    header.stamp = ros::Time::now(); // time
+    img_bridge = cv_bridge::CvImage(header, sensor_msgs::image_encodings::BGR8, img);
+    currentFrame = *img_bridge.toImageMsg(); // from cv_bridge to sensor_msgs::Image
+    if(currentFrame.step == 0) {
+      std::cout << "Error: No image with name " << imgName << " received" << std::endl;
+    }
+    try
+    {
+            currentFrame_ptr = cv_bridge::toCvCopy(currentFrame, sensor_msgs::image_encodings::BGR8);
+            frames.push_back(currentFrame_ptr);
+    }
+    catch (cv_bridge::Exception& e)
+    {
+            ROS_ERROR("cv_bridge exception: %s", e.what());
+            return;
+    }
+    ss.str(std::string());
+  }
+  i = 0;
+  int64 t0 = cv::getTickCount();
+  while(i < frames.size()) {
+    currentFrame_ptr = frames.at(i);
+    processImage(cameraInfo, lanesConf);
+    i++;
+  }
+  int64 t1 = cv::getTickCount();
+  double secs = (t1-t0)/cv::getTickFrequency();
+  ROS_INFO("%i images processed in %f seconds. Frequency: %fHz", i-1, secs, (float)(i-1)/secs);
+  fitting_phase.closeFile();
 }
 
 
@@ -193,12 +221,12 @@ int main(int argc, char **argv){
          * than we can send them, the number here specifies how many messages to
          * buffer up before throwing some away.
          */
-
         ros::Subscriber driving_orientation_sub = nh.subscribe<std_msgs::Int32>("lane_detector/driving_orientation", 1, drivingOrientationCB);
-        image_transport::Subscriber image_sub = it.subscribe("/kinect_mono_throttled", 1, readImg);
+        image_transport::Subscriber image_sub = it.subscribe("/image", 1, readImg);
         resultImg_pub = it.advertise("lane_detector/result", 1);
         lane_pub = nh.advertise<lane_detector::Lane>("lane_detector/lane", 1);
 
+        //laneDetectionFromFiles();
 
         //ros::MultiThreadedSpinner spinner(0); // Use one thread for core
         //spinner.spin(); // spin() will not return until the node has been shutdown
