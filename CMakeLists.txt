@@ -139,7 +139,6 @@ add_library(KALMAN_FILTER src/Kalman.cpp)
 
 ## Declare a C++ executable
 add_executable(lane_detector src/lane_detector.cpp)
-add_executable(camera_simulator src/camera_simulator.cpp)
 
 ## Add cmake target dependencies of the library
 ## as an example, code may need to be generated before libraries
@@ -170,7 +169,6 @@ target_link_libraries(TRACKER ${OpenCV_LIBRARIES} KALMAN_FILTER HUNGARIAN_ALG)
 target_link_libraries(FITTING ${catkin_LIBRARIES} ${OpenCV_LIBRARIES} FITTING_APPROACH TRACKER LaneDetector)
 target_link_libraries(lane_detector ${catkin_LIBRARIES} PREPROCESSOR FITTING EXTRACTOR)
 target_link_libraries(lane_detector ${OpenCV_LIBRARIES} LaneDetector)
-target_link_libraries(camera_simulator ${OpenCV_LIBRARIES} ${catkin_LIBRARIES})
 
 #############
 ## Install ##
