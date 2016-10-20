@@ -85,22 +85,22 @@ void Preprocessor::preprocess(cv::Mat& originalImg, cv::Mat& img, LaneDetector::
 
         if(config.draw_roi) {
 
-          cv::Point points_[1][3];
-          //points_[0][0] = cv::Point(vanishing_point.x, ipmInfo.ipmTop);
-          points_[0][0] = cv::Point(ipmInfo.ipmRight, ipmInfo.ipmTop);
-          points_[0][1] = cv::Point(ipmInfo.ipmLeft, ipmInfo.ipmTop);
-          points_[0][2] = cv::Point(vanishing_point.x, ipmInfo.ipmBottom);
+          cv::Point points_[1][4];
+          points_[0][0] = cv::Point(ipmInfo.ipmLeft, ipmInfo.ipmTop);
+          points_[0][1] = cv::Point(ipmInfo.ipmRight, ipmInfo.ipmTop);
+          points_[0][2] = cv::Point(ipmInfo.ipmRight, ipmInfo.ipmBottom);
+          points_[0][3] = cv::Point(ipmInfo.ipmLeft, ipmInfo.ipmBottom);
           const cv::Point* pts[1] = {points_[0]};
-          int npts[] = {3};
+          int npts[] = {4};
           cv::Mat overlay;
           originalImg.copyTo(overlay);
           cv::fillPoly(overlay, pts, npts, 1, cv::Scalar(255,0,0));
           double opacity = 0.4;
           cv::addWeighted(overlay, opacity, originalImg, 1 - opacity, 0, originalImg);
-          cv::circle(originalImg, cv::Point(vanishing_point.x, ipmInfo.ipmTop), 6, cv::Scalar(0,255,255), -1);
-          cv::circle(originalImg, cv::Point(ipmInfo.ipmRight, ipmInfo.ipmTop), 6, cv::Scalar(0,255,255), -1);
           cv::circle(originalImg, cv::Point(ipmInfo.ipmLeft, ipmInfo.ipmTop), 6, cv::Scalar(0,255,255), -1);
-          cv::circle(originalImg, cv::Point(vanishing_point.x, ipmInfo.ipmBottom), 6, cv::Scalar(0,255,255), -1);
+          cv::circle(originalImg, cv::Point(ipmInfo.ipmRight, ipmInfo.ipmTop), 6, cv::Scalar(0,255,255), -1);
+          cv::circle(originalImg, cv::Point(ipmInfo.ipmRight, ipmInfo.ipmBottom), 6, cv::Scalar(0,255,255), -1);
+          cv::circle(originalImg, cv::Point(ipmInfo.ipmLeft, ipmInfo.ipmBottom), 6, cv::Scalar(0,255,255), -1);
         }
 }
 
