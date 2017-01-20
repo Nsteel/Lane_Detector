@@ -114,18 +114,16 @@ public:
 	inline void setMinimumSeenFrames(size_t minimum_seen_frames) { this->minimum_seen_frames = minimum_seen_frames; };
 
 private:
-	// Шаг времени опроса фильтра
+
 	track_t dt;
 
 	track_t Accel_noise_mag;
 
-	// Порог расстояния. Если точки находятся дуг от друга на расстоянии,
-	// превышающем этот порог, то эта пара не рассматривается в задаче о назначениях.
 	track_t dist_thres;
-	// Максимальное количество кадров которое трек сохраняется не получая данных о измерений.
-    size_t maximum_allowed_skipped_frames;
-	// Максимальная длина следа
-    size_t max_trace_length;
+
+  size_t maximum_allowed_skipped_frames;
+
+  size_t max_trace_length;
 
 	size_t NextTrackID;
 

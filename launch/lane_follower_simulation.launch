@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<launch>
+	<!-- Whether to load the images from a folder (data set) or from the kinect -->
+	<arg name="load_images_from_folder" default="true" />
+	<!-- Bring up lane detector -->
+	<node pkg="lane_detector" type="lane_detector" name="lane_detector" output="screen">
+		<param name="images_from_folder" value="$(arg load_images_from_folder)" />
+		<param name="images_path" value="$(find lane_detector)/data/second_set" />
+	</node>
+</launch>

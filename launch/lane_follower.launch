@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<launch>
+ 	<arg name="kinect" default="true" />
+	<!-- Whether to load the images from a folder (data set) or from the kinect -->
+	<arg name="load_images_from_folder" default="false" />
+
+
+	<!-- Run the necessary nodes to bring up the car -->
+	<node pkg="pses_basis" type="car_handler" name="car_handler" output="screen">
+		<param name="kinect_on" value="true" />
+	</node>
+
+	<!-- Bring up lane detector -->
+	<node pkg="lane_detector" type="lane_detector" name="lane_detector" output="screen">
+		<remap from="camera_info" to="/kinect2/qhd/camera_info" />
+		<remap from="image" to="/kinect2/qhd/image_color_rect" />
+		<param name="images_from_folder" value="$(arg load_images_from_folder)" />
+		<param name="images_path" value="$(find lane_detector)/data/first_set" />
+	</node>
+		<!-- Bring up the Kinect -->
+	<include if="$(arg kinect)" file="$(find kinect2_bridge)/launch/kinect2_bridge.launch" />
+
+</launch>

@@ -1,5 +1,4 @@
 #include <lane_detector/lane_tracker/Ctracker.h>
-#include <swri_profiler/profiler.h>
 
 //die folgenden Codeabschnitte sind open source und wurden aus https://github.com/Smorodov/Multitarget-tracker genommen
 
@@ -13,7 +12,6 @@ void CTracker::Update(
 	)
 {
 	assert(detections.size() == rects.size());
-	SWRI_PROFILE("Tracking");
 
 	// -----------------------------------
 	// If there is no tracks yet, then every cv::Point begins its own track.
@@ -27,19 +25,15 @@ void CTracker::Update(
 		}
 	}
 
-	size_t N = tracks.size();		// треки
-	size_t M = detections.size();	// детекты
-
-	assignments_t assignment; // назначения
+	size_t N = tracks.size();
+	size_t M = detections.size();
+	assignments_t assignment;
 
 	if (!tracks.empty())
 	{
-		// Матрица расстояний от N-ного трека до M-ного детекта.
+
 		distMatrix_t Cost(N * M);
 
-		// -----------------------------------
-		// Треки уже есть, составим матрицу расстояний
-		// -----------------------------------
 		switch (distType)
 		{
 		case CentersDist:

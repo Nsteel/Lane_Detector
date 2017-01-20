@@ -27,8 +27,8 @@
 #include <lane_detector/LaneDetector.hh>
 #include <lane_detector/mcv.hh>
 #include <lane_detector/utils.h>
-#include <swri_profiler/profiler.h>
-#include<ros/package.h>
+#include <ros/package.h>
+#include <boost/filesystem.hpp>
 
 cv_bridge::CvImagePtr currentFrame_ptr;
 Preprocessor preproc;
@@ -41,20 +41,40 @@ LaneDetector::CameraInfo cameraInfo;
 LaneDetector::LaneDetectorConf lanesConf;
 
 
+/**
+ * readCameraInfo reads and sets the camera parameters if received on topic "camera_info".
+ * Otherwise the parameters are set with some constant values related to the camera used
+ * in our experiments.
+ */
 void readCameraInfo(const sensor_msgs::CameraInfo::ConstPtr& cm, bool* done) {
 
-  cameraInfo.focalLength.x = cm->P[0];
-  cameraInfo.focalLength.y = cm->P[5];
-  cameraInfo.opticalCenter.x = cm->P[2];
-  cameraInfo.opticalCenter.y = cm->P[6];
-  cameraInfo.imageWidth = cm->width;
-  cameraInfo.imageHeight = cm->height;
-  cameraInfo.cameraHeight = dynConfig.camera_height;
-  cameraInfo.pitch = dynConfig.camera_pitch * CV_PI/180;
-  cameraInfo.yaw = 0.0;
+  if(cm != NULL) {
+    cameraInfo.focalLength.x = cm->P[0];
+    cameraInfo.focalLength.y = cm->P[5];
+    cameraInfo.opticalCenter.x = cm->P[2];
+    cameraInfo.opticalCenter.y = cm->P[6];
+    cameraInfo.imageWidth = cm->width;
+    cameraInfo.imageHeight = cm->height;
+    cameraInfo.cameraHeight = dynConfig.camera_height;
+    cameraInfo.pitch = dynConfig.camera_pitch * CV_PI/180;
+    cameraInfo.yaw = 0.0;
+  }
+  else {
+    cameraInfo.focalLength.x = 270.076996;
+    cameraInfo.focalLength.y = 300.836426;
+    cameraInfo.opticalCenter.x = 325.678818;
+    cameraInfo.opticalCenter.y = 250.211312;
+    cameraInfo.imageWidth = 640;
+    cameraInfo.imageHeight = 480;
+    cameraInfo.cameraHeight = dynConfig.camera_height;
+    cameraInfo.pitch = dynConfig.camera_pitch * CV_PI/180;
+    cameraInfo.yaw = 0.0;
+  }
+
   *done = true;
 }
 
+//Callback function for Dynamic Reconfigre
 void configCallback(lane_detector::DetectorConfig& config, uint32_t level)
 {
         preproc.setConfig(config);
@@ -64,6 +84,7 @@ void configCallback(lane_detector::DetectorConfig& config, uint32_t level)
         ROS_DEBUG("Config was set");
 }
 
+//Callback function for topic "lane_detector/driving_orientation"
 void drivingOrientationCB(const std_msgs::Int32::ConstPtr& driving_orientation)
 {
   if(driving_orientation->data == 0)
@@ -74,7 +95,6 @@ void drivingOrientationCB(const std_msgs::Int32::ConstPtr& driving_orientation)
 
 void processImage(LaneDetector::CameraInfo& cameraInfo, LaneDetector::LaneDetectorConf& lanesConf) {
   if(currentFrame_ptr) {
-    SWRI_PROFILE("processImage");
     //information paramameters of the IPM transform
     LaneDetector::IPMInfo ipmInfo;
     // detect bounding boxes arround the lanes
@@ -95,18 +115,14 @@ void processImage(LaneDetector::CameraInfo& cameraInfo, LaneDetector::LaneDetect
   }
 }
 
-void readImg(const sensor_msgs::ImageConstPtr& img)
-{
+//Callback function for a new image on topic "image".
+void readImg(const sensor_msgs::ImageConstPtr& img) {
 
         try
         {
                 currentFrame_ptr = cv_bridge::toCvCopy(img, sensor_msgs::image_encodings::BGR8);
                 processImage(cameraInfo, lanesConf);
-                //if(dynConfig.image != 0) {
-                  //      currentFrame_ptr->encoding = sensor_msgs::image_encodings::MONO8;
-                //}
                 resultImg_pub.publish(*currentFrame_ptr->toImageMsg());
-                //currentFrame_ptr.reset();
         }
         catch (cv_bridge::Exception& e)
         {
@@ -116,57 +132,57 @@ void readImg(const sensor_msgs::ImageConstPtr& img)
 
 }
 
-void laneDetectionFromFiles() {
-  std::vector<cv_bridge::CvImagePtr> frames;
-  sensor_msgs::Image currentFrame;
-  std::stringstream ss;
-  string imgName;
-  int i = 0;
-  while(i <= 87) {
-    if(i < 10) {
-      ss << "frame000" << i << ".jpg";
-    }
-    else if(i < 100) {
-      ss << "frame00" << i << ".jpg";
-    }
-    else if(i < 1000) {
-      ss << "frame0" << i << ".jpg";
-    }
-    std::cout << imgName << std::endl;
-    i++;
-    imgName = ss.str();
-    cv::Mat img = cv::imread(ros::package::getPath("lane_detector") + "/data/" + "new_set/" + imgName);
-    cv_bridge::CvImage img_bridge;
-    std_msgs::Header header; // empty header
-    header.stamp = ros::Time::now(); // time
-    img_bridge = cv_bridge::CvImage(header, sensor_msgs::image_encodings::BGR8, img);
-    currentFrame = *img_bridge.toImageMsg(); // from cv_bridge to sensor_msgs::Image
-    if(currentFrame.step == 0) {
-      std::cout << "Error: No image with name " << imgName << " received" << std::endl;
-    }
-    try
-    {
-            currentFrame_ptr = cv_bridge::toCvCopy(currentFrame, sensor_msgs::image_encodings::BGR8);
-            frames.push_back(currentFrame_ptr);
-    }
-    catch (cv_bridge::Exception& e)
-    {
-            ROS_ERROR("cv_bridge exception: %s", e.what());
-            return;
-    }
-    ss.str(std::string());
-  }
-  i = 0;
-  int64 t0 = cv::getTickCount();
-  while(i < frames.size()) {
-    currentFrame_ptr = frames.at(i);
-    processImage(cameraInfo, lanesConf);
-    i++;
-  }
-  int64 t1 = cv::getTickCount();
-  double secs = (t1-t0)/cv::getTickFrequency();
-  ROS_INFO("%i images processed in %f seconds. Frequency: %fHz", i-1, secs, (float)(i-1)/secs);
-  fitting_phase.closeFile();
+void laneDetectionFromFiles(std::string& path) {
+
+std::vector<std::string> fileNames;
+
+if (boost::filesystem::is_directory(path))
+ {
+   for (boost::filesystem::directory_iterator itr(path); itr!=boost::filesystem::directory_iterator(); ++itr)
+   {
+     if (boost::filesystem::is_regular_file(itr->status()) && (itr->path().filename().string().find(".jpg") != std::string::npos || itr->path().filename().string().find(".png") != std::string::npos)) {
+       fileNames.push_back(itr->path().filename().string());
+     }
+   }
+
+   std::sort(fileNames.begin(), fileNames.end());
+
+   std::vector<cv_bridge::CvImagePtr> frames;
+   sensor_msgs::Image currentFrame;
+
+   for(int i = 0; i < fileNames.size(); i++) {
+     cv::Mat img = cv::imread(path + "/" + fileNames.at(i));
+     cv_bridge::CvImage img_bridge;
+     std_msgs::Header header; // empty header
+     header.stamp = ros::Time::now(); // time
+     img_bridge = cv_bridge::CvImage(header, sensor_msgs::image_encodings::BGR8, img);
+     currentFrame = *img_bridge.toImageMsg(); // from cv_bridge to sensor_msgs::Image
+     if(currentFrame.step == 0) {
+       std::cout << "Error: No image with name " << fileNames.at(i) << " received" << std::endl;
+     }
+     try
+     {
+             currentFrame_ptr = cv_bridge::toCvCopy(currentFrame, sensor_msgs::image_encodings::BGR8);
+             frames.push_back(currentFrame_ptr);
+     }
+     catch (cv_bridge::Exception& e)
+     {
+             ROS_ERROR("cv_bridge exception: %s", e.what());
+             return;
+     }
+   }
+   int i = 0;
+   int64 t0 = cv::getTickCount();
+   while(i < frames.size()) {
+     currentFrame_ptr = frames.at(i);
+     processImage(cameraInfo, lanesConf);
+     i++;
+   }
+   int64 t1 = cv::getTickCount();
+   double secs = (t1-t0)/cv::getTickFrequency();
+   ROS_INFO("%i images processed in %f seconds. Frequency: %fHz", i, secs, (float)i/secs);
+   fitting_phase.closeFile();
+ }
 }
 
 
@@ -189,10 +205,15 @@ int main(int argc, char **argv){
         server.setCallback(f);
 
         bool info_set = false;
-
-        //Read camera information
+        bool loadFiles = false;
+        ros::param::get("~images_from_folder", loadFiles);
+        /**
+        * Read camera information
+        * IMPORTANT: If images are loaded from a folder the camera parameters have to be set
+        * inside the function readCameraInfo (lane_detector.cpp::57)
+        */
         ros::Subscriber cameraInfo_sub = nh.subscribe<sensor_msgs::CameraInfo>("camera_info", 1, std::bind(readCameraInfo, std::placeholders::_1, &info_set));
-
+        if(loadFiles) readCameraInfo(NULL,&info_set);
         while (!info_set) {
           ros::spinOnce();
           ROS_WARN("No information on topic camera_info received");
@@ -221,12 +242,20 @@ int main(int argc, char **argv){
          * than we can send them, the number here specifies how many messages to
          * buffer up before throwing some away.
          */
+
+        /**
+         * Subscriber on topic "lane_detector/driving_orientation".
+         * This subscriber allows to change lane while driving and to select the desired
+         * driving direction
+         */
         ros::Subscriber driving_orientation_sub = nh.subscribe<std_msgs::Int32>("lane_detector/driving_orientation", 1, drivingOrientationCB);
         image_transport::Subscriber image_sub = it.subscribe("/image", 1, readImg);
         resultImg_pub = it.advertise("lane_detector/result", 1);
         lane_pub = nh.advertise<lane_detector::Lane>("lane_detector/lane", 1);
 
-        //laneDetectionFromFiles();
+        std::string imagesPath = "";
+        ros::param::get("~images_path", imagesPath);
+        if(loadFiles) laneDetectionFromFiles(imagesPath); // Whether to load the images from a folder (data set) or from the kinect
 
         //ros::MultiThreadedSpinner spinner(0); // Use one thread for core
         //spinner.spin(); // spin() will not return until the node has been shutdown

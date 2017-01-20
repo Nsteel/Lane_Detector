@@ -1,10 +1,8 @@
 #include <lane_detector/preprocessor.h>
-#include <swri_profiler/profiler.h>
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/ocl/ocl.hpp>
 
 void Preprocessor::preprocess(cv::Mat& originalImg, cv::Mat& img, LaneDetector::IPMInfo& ipmInfo_, LaneDetector::CameraInfo& cameraInfo_) {
-        SWRI_PROFILE("Preprocess");
         CvMat raw_mat = img;
         CvMat* raw_ptr = &raw_mat;
         CvMat* mat_ptr;

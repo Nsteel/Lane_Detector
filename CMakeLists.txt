@@ -13,18 +13,13 @@ find_package(catkin REQUIRED COMPONENTS
   geometry_msgs
   dynamic_reconfigure
   message_generation
-  roslint
-  swri_profiler
 )
 find_package(OpenCV 2 REQUIRED)
 find_package(OpenMP REQUIRED)
 find_package(MRPT REQUIRED)
 
-roslint_cpp()
-
 ## System dependencies are found with CMake's conventions
 # find_package(Boost REQUIRED COMPONENTS system)
-
 
 ## Uncomment this if the package has a setup.py. This macro ensures
 ## modules and global scripts declared therein get installed
