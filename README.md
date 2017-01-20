@@ -20,18 +20,18 @@ $ roslaunch lane_detector lane_follower_simulation.launch
 ```
 
 ##Subscribed Topics:
-/image (sensor_msgs/Image)
-/camera_info (sensor_msgs/CameraInfo)
-/lane_detector/driving_orientation (std_msgs::Int32)
+* /image (sensor_msgs/Image)
+* /camera_info (sensor_msgs/CameraInfo)
+* /lane_detector/driving_orientation (std_msgs::Int32)
 
 ##Published Topics:
-/lane_detector/lane (lane_detector::Lane)
+* /lane_detector/lane (lane_detector::Lane)
 
-## ROS-Message lane_detector::Lane:
-header (Header): Header with time stamp
-left_line (geometry_msgs/Point32[]): Sorted Array of points with the x,y coordinates (in meters) of the left line.  
-right_line (geometry_msgs/Point32[]): Sorted Array of points with the x,y coordinates (in meters) of the right line.
-guide_line (geometry_msgs/Point32[]): Sorted Array of points with the x,y coordinates (in meters) of the guide (middle) line.
+## lane_detector/Lane ROS-Message:
+* header (Header): Header with time stamp
+* left_line (geometry_msgs/Point32[]): Sorted Array of points with the x,y coordinates (in meters) of the left line.  
+* right_line (geometry_msgs/Point32[]): Sorted Array of points with the x,y coordinates (in meters) of the right line.
+* guide_line (geometry_msgs/Point32[]): Sorted Array of points with the x,y coordinates (in meters) of the guide (middle) line.
 
 ## Additional Requirements:
 * The used camera has to be calibrated and should send the calibration data over the camera_info topic.
