@@ -20,9 +20,9 @@ $ roslaunch lane_detector lane_follower_simulation.launch
 ```
 
 ##Subscribed Topics:
-* /image (sensor_msgs/Image)
-* /camera_info (sensor_msgs/CameraInfo)
-* /lane_detector/driving_orientation (std_msgs::Int32)
+* /image (sensor_msgs/Image): Input image.
+* /camera_info (sensor_msgs/CameraInfo): Camera calibration data.
+* /lane_detector/driving_orientation (std_msgs::Int32): Topic to change lane. 0 to drive on the right and 1 to drive on the left.
 
 ##Published Topics:
 * /lane_detector/lane (lane_detector::Lane)
